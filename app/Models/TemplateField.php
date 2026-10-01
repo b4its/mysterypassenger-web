@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use App\Enums\FieldType;
+use App\Observers\TemplateFieldObserver;
 use Database\Factories\TemplateFieldFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ObservedBy(TemplateFieldObserver::class)]
 class TemplateField extends Model
 {
     /** @use HasFactory<TemplateFieldFactory> */

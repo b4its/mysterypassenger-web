@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\UserRole;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -7,26 +9,16 @@ use Tests\TestCase;
 |--------------------------------------------------------------------------
 | Test Case
 |--------------------------------------------------------------------------
-|
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind different classes or traits.
-|
 */
 
 pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
-    ->in('Feature');
+    ->use(RefreshDatabase::class)
+    ->in('Feature', 'Unit');
 
 /*
 |--------------------------------------------------------------------------
 | Expectations
 |--------------------------------------------------------------------------
-|
-| When you're writing tests, you often need to check that values meet certain conditions. The
-| "expect()" function gives you access to a set of "expectations" methods that you can use
-| to assert different things. Of course, you may extend the Expectation API at any time.
-|
 */
 
 expect()->extend('toBeOne', function () {
@@ -37,14 +29,29 @@ expect()->extend('toBeOne', function () {
 |--------------------------------------------------------------------------
 | Functions
 |--------------------------------------------------------------------------
-|
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
-|
 */
 
-function something()
+/** Login sebagai role tertentu dan kembalikan user-nya. */
+function actingAsRole(UserRole $role = UserRole::Admin): User
 {
-    // ..
+    $user = User::factory()->create(['role' => $role, 'is_active' => true]);
+
+    test()->actingAs($user);
+
+    return $user;
+}
+
+function actingAsAdmin(): User
+{
+    return actingAsRole(UserRole::Admin);
+}
+
+function actingAsReviewer(): User
+{
+    return actingAsRole(UserRole::Reviewer);
+}
+
+function actingAsSurveyor(): User
+{
+    return actingAsRole(UserRole::Surveyor);
 }
