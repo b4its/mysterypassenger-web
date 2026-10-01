@@ -92,9 +92,22 @@ class SurveyReportComposer
      * Struktur tabel: satu entri per indikator, berisi baris sub-indikator.
      * `rowspan` dihitung di sini agar Blade tetap bodoh.
      *
+     * Bila snapshot (`surveys.meta`) tersedia, label/teks/urutan diambil dari
+     * snapshot agar PDF lama tetap reproducible walau template sudah direvisi.
+     *
      * @return Collection<int, array<string, mixed>>
      */
     private function groupRows(Survey $survey, OutputSection $section, ?array $snapshot): Collection
+    {
+        if (is_array($snapshot) && ! empty($snapshot['groups'])) {
+            return $this->groupRowsFromSnapshot($survey, $section, $snapshot);
+        }
+
+        return $this->groupRowsFromRelations($survey, $section);
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    private function groupRowsFromRelations(Survey $survey, OutputSection $section): Collection
     {
         $wanted = [$section->value, OutputSection::Both->value];
 
@@ -112,21 +125,86 @@ class SurveyReportComposer
                 'rowspan' => max(1, $answers->count()),
                 'score' => $answers->sum(fn (SurveyAnswer $a) => (float) $a->score),
                 'maxScore' => $answers->sum(fn (SurveyAnswer $a) => (float) $a->max_score),
-                'rows' => $answers->map(fn (SurveyAnswer $a) => [
-                    'text' => $a->question->text,
-                    'code' => $a->question->code,
-                    'answer' => $a->displayValue(),
-                    'isBoolean' => $a->answer_type === AnswerType::Boolean,
-                    'isPositive' => $a->value_boolean === true,
-                    'note' => $a->note,
-                    'score' => $a->score,
-                    'maxScore' => $a->max_score,
-                    'photos' => $a->media->map(fn ($m) => [
-                        'src' => $this->mediaDataUri($m),
-                        'caption' => $m->caption,
-                    ])->all(),
-                ])->all(),
+                'rows' => $answers->map(fn (SurveyAnswer $a) => $this->rowFromAnswer(
+                    $a,
+                    $a->question->text,
+                    $a->question->code,
+                ))->all(),
             ]);
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    private function groupRowsFromSnapshot(Survey $survey, OutputSection $section, array $snapshot): Collection
+    {
+        $wanted = [$section->value, OutputSection::Both->value];
+        $answers = $survey->answers->keyBy('question_id');
+
+        // Ratakan struktur group rekursif menjadi daftar berurutan.
+        $flat = [];
+        $walk = function (array $groups) use (&$walk, &$flat): void {
+            foreach ($groups as $group) {
+                $flat[] = $group;
+                if (! empty($group['children'])) {
+                    $walk($group['children']);
+                }
+            }
+        };
+        $walk($snapshot['groups']);
+
+        $groups = collect($flat)
+            ->filter(fn (array $g) => in_array($g['output_section'] ?? 'checklist', $wanted, true))
+            ->sortBy('sort_order')
+            ->map(function (array $group) use ($answers) {
+                $rows = collect($group['questions'] ?? [])
+                    ->sortBy('sort_order')
+                    ->map(fn (array $q) => $answers->get($q['id']))
+                    ->filter()
+                    ->values();
+
+                if ($rows->isEmpty()) {
+                    return null;
+                }
+
+                $first = $rows->first();
+                $meta = collect($group['questions'])->keyBy('id');
+
+                return [
+                    'no' => null,
+                    'name' => $group['name'],
+                    'rowspan' => max(1, $rows->count()),
+                    'score' => $rows->sum(fn (SurveyAnswer $a) => (float) $a->score),
+                    'maxScore' => $rows->sum(fn (SurveyAnswer $a) => (float) $a->max_score),
+                    'rows' => $rows->map(fn (SurveyAnswer $a) => $this->rowFromAnswer(
+                        $a,
+                        $meta->get($a->question_id)['text'] ?? $a->question->text,
+                        $meta->get($a->question_id)['code'] ?? $a->question->code,
+                    ))->all(),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->map(fn (array $group, int $i) => array_merge($group, ['no' => $i + 1]));
+
+        return $groups;
+    }
+
+    /** @return array<string, mixed> */
+    private function rowFromAnswer(SurveyAnswer $answer, ?string $text, ?string $code): array
+    {
+        return [
+            'text' => $text,
+            'code' => $code,
+            'answer' => $answer->displayValue(),
+            'isBoolean' => $answer->answer_type === AnswerType::Boolean,
+            'isPositive' => $answer->value_boolean === true,
+            'note' => $answer->note,
+            'score' => $answer->score,
+            'maxScore' => $answer->max_score,
+            'photos' => $answer->media->map(fn ($m) => [
+                'src' => $this->mediaDataUri($m),
+                'caption' => $m->caption,
+            ])->all(),
+        ];
     }
 
     /** @return array<int, array{label: string, name: string, position: ?string}> */

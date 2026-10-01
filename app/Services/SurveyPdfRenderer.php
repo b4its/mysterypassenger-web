@@ -20,7 +20,7 @@ class SurveyPdfRenderer
             : 'pdf.survey-checklist';
 
         return Pdf::loadView($view, $data)
-            ->setPaper($setting->paper_size, $setting->orientation)
+            ->setPaper($setting->paper_size ?: 'a4', $setting->orientation ?: 'landscape')
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('isFontSubsettingEnabled', true);
     }
