@@ -7,7 +7,7 @@ use App\Models\Survey;
 use App\Models\User;
 use App\Services\SurveyPdfRenderer;
 use App\Services\SurveyReportComposer;
-use Filament\Notifications\Actions\Action;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -70,6 +70,22 @@ class GenerateSurveyPdfBundle implements ShouldQueue
             });
 
         $zip->close();
+
+        // ZipArchive tidak menulis berkas bila tidak ada entri (mis. seluruh
+        // survei ditolak policy). Hapus sisa berkas dan beri tahu pengguna.
+        if ($processed === 0 || ! is_file($absolute)) {
+            if (is_file($absolute)) {
+                @unlink($absolute);
+            }
+
+            Notification::make()
+                ->title('Tidak ada survei yang dapat diproses')
+                ->body('Tidak ada survei yang memenuhi izin Anda untuk dibuatkan PDF.')
+                ->warning()
+                ->sendToDatabase($user);
+
+            return;
+        }
 
         Notification::make()
             ->title('Paket PDF siap diunduh')
