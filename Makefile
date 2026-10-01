@@ -289,9 +289,15 @@ check: pint-test test ## Gerbang pre-commit: format + test
 # ── Pemeliharaan ──────────────────────────────────────────────────────────────
 
 .PHONY: clear
-clear: ## Bersihkan semua cache aplikasi
+clear: ## Bersihkan cache config, view, application, route, lalu optimize ulang
+	$(ART) config:clear
+	$(ART) view:clear
+	$(ART) cache:clear
+	$(ART) route:clear
 	$(ART) optimize:clear
 	$(ART) filament:optimize-clear
+	$(ART) optimize
+	$(ART) filament:optimize
 
 .PHONY: optimize
 optimize: ## Cache config/route/view/Filament untuk produksi
