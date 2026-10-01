@@ -12,6 +12,7 @@ use App\Models\SurveyAnswerMedia;
 use App\Models\SurveyFieldValue;
 use App\Services\SurveyReportComposer;
 use App\Services\SurveySnapshotService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 it('menghasilkan PDF ceklist yang valid', function () {
@@ -39,6 +40,24 @@ it('memakai judul dari report_settings, bukan nilai hardcode', function () {
     $data = app(SurveyReportComposer::class)->compose($survey, OutputSection::Checklist);
 
     expect($data['title'])->toBe('LEMBAR PEMERIKSAAN ARMADA');
+});
+
+it('memakai kop instansi dari report_settings (bukan hardcode)', function () {
+    actingAsAdmin();
+
+    $survey = Survey::factory()->submitted()->create();
+
+    ReportSetting::factory()->create([
+        'transport_mode_id' => $survey->transport_mode_id,
+        'organization_name' => 'DINAS PERHUBUNGAN KHUSUS',
+    ]);
+
+    $data = app(SurveyReportComposer::class)->compose($survey->refresh(), OutputSection::Checklist);
+
+    expect($data['setting']->organization_name)->toBe('DINAS PERHUBUNGAN KHUSUS');
+
+    $html = view('pdf.survey-checklist', $data)->render();
+    expect($html)->toContain('DINAS PERHUBUNGAN KHUSUS');
 });
 
 it('memakai label field dari template pada baris kop', function () {
@@ -75,6 +94,21 @@ it('menghitung rowspan sebesar jumlah pertanyaan dalam indikator', function () {
 
     expect($data['groups'])->toHaveCount(2)
         ->and($data['groups']->first()['rowspan'])->toBe(4);
+});
+
+it('memformat tanggal pelaksanaan dalam Bahasa Indonesia', function () {
+    actingAsAdmin();
+
+    $survey = Survey::factory()->submitted()->create([
+        'executed_at' => Carbon::parse('2026-10-02 08:00:00'),
+    ]);
+
+    $data = app(SurveyReportComposer::class)->compose($survey->refresh(), OutputSection::Checklist);
+
+    $tanggal = collect($data['metaRows'])->firstWhere('label', 'Tanggal Pelaksanaan');
+
+    expect($tanggal)->not->toBeNull()
+        ->and($tanggal['value'])->toBe('Jumat, 02 - Oktober - 2026');
 });
 
 it('memisahkan dokumen ceklist dan laporan berdasarkan output_section', function () {

@@ -24,6 +24,7 @@
 /storage/*.key
 /storage/pail
 /storage/fonts
+/storage/backups
 /vendor
 _ide_helper.php
 Homestead.json
