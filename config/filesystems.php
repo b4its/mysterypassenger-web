@@ -47,6 +47,25 @@ return [
             'report' => false,
         ],
 
+        // Bukti foto/jawaban survei — PRIVAT, hanya lewat SurveyMediaController terotorisasi.
+        'survey_media' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/survey-media'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // Aset kop surat (logo) — boleh publik.
+        'report_assets' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/report-assets'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage/report-assets',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
