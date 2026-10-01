@@ -9,6 +9,7 @@ use App\Filament\Resources\FormTemplates\Pages\ListFormTemplates;
 use App\Filament\Resources\FormTemplates\RelationManagers\AssignmentsRelationManager;
 use App\Filament\Resources\FormTemplates\RelationManagers\FieldsRelationManager;
 use App\Filament\Resources\FormTemplates\RelationManagers\SectionsRelationManager;
+use App\Filament\Resources\FormTemplates\RelationManagers\SubGroupsRelationManager;
 use App\Filament\Resources\FormTemplates\Schemas\FormTemplateForm;
 use App\Filament\Resources\FormTemplates\Tables\FormTemplatesTable;
 use App\Models\FormTemplate;
@@ -51,6 +52,7 @@ class FormTemplateResource extends Resource
         return [
             SectionsRelationManager::class,
             FieldsRelationManager::class,
+            SubGroupsRelationManager::class,
             AssignmentsRelationManager::class,
         ];
     }
