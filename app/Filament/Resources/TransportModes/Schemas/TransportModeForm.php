@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TransportModes\Schemas;
 
+use App\Models\TransportMode;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -9,6 +10,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class TransportModeForm
 {
@@ -29,7 +31,8 @@ class TransportModeForm
 
                     TextInput::make('slug')
                         ->required()
-                        ->unique(ignoreRecord: true)
+                        ->rule(fn (?TransportMode $record) => Rule::unique('transport_modes', 'slug')
+                            ->ignore($record?->getKey()))
                         ->maxLength(140)
                         ->helperText('Dipakai di URL. Dibuat otomatis dari nama.'),
 
