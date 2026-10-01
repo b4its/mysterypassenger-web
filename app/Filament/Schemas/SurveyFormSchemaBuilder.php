@@ -34,7 +34,10 @@ class SurveyFormSchemaBuilder
             ->with([
                 'sections',
                 'fields.section',
-                'rootGroups.children.children',
+                'rootGroups.questions.questionOptions',
+                'rootGroups.children.questions.questionOptions',
+                'rootGroups.children.children.questions.questionOptions',
+                'rootGroups.children.children.children.questions.questionOptions',
             ])
             ->firstOrFail();
 

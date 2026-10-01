@@ -27,7 +27,7 @@ class FillSurvey extends Page implements HasSchemas
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
-        $this->authorizeAccess();
+        abort_unless(static::getResource()::canAccess(), 403);
         abort_unless(auth()->user()->can('update', $this->record), 403);
 
         $this->form->fill(

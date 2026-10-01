@@ -100,11 +100,11 @@ class SurveyReportComposer
 
         return $survey->answers
             ->filter(fn (SurveyAnswer $a) => in_array($a->question->group->output_section->value, $wanted, true))
-            ->sortBy([
-                fn (SurveyAnswer $a) => $a->question->group->sort_order,
-                fn (SurveyAnswer $a) => $a->question->sort_order,
-            ])
             ->groupBy(fn (SurveyAnswer $a) => $a->question->group->id)
+            ->sortBy(fn (Collection $answers) => $answers->first()->question->group->sort_order)
+            ->map(fn (Collection $answers) => $answers
+                ->sortBy(fn (SurveyAnswer $a) => $a->question->sort_order)
+                ->values())
             ->values()
             ->map(fn (Collection $answers, int $i) => [
                 'no' => $i + 1,

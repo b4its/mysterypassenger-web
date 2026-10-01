@@ -32,7 +32,16 @@ class ScoreCalculator
         $total = 0.0;
         $max = 0.0;
 
-        foreach ($template->rootGroups()->with(['questions', 'descendants.questions'])->get() as $group) {
+        $groups = $template->rootGroups()
+            ->with([
+                'questions',
+                'children.questions',
+                'children.children.questions',
+                'children.children.children.questions',
+            ])
+            ->get();
+
+        foreach ($groups as $group) {
             [$groupTotal, $groupMax] = $this->scoreGroup($group, $answers);
             $total += $groupTotal;
             $max += $groupMax;

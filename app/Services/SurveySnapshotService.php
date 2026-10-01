@@ -24,7 +24,7 @@ class SurveySnapshotService
             ->with([
                 'sections',
                 'fields',
-                'rootGroups.children.children',
+                'rootGroups.children.children.children',
             ])
             ->firstOrFail();
 
@@ -110,7 +110,7 @@ class SurveySnapshotService
         };
 
         return $template->rootGroups()
-            ->with(['children.children'])
+            ->with(['children.children.children'])
             ->orderBy('sort_order')
             ->get()
             ->map(fn (QuestionGroup $group) => $build($group))
