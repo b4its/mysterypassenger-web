@@ -32,7 +32,7 @@ make install     # build image, nyalakan service, composer install, key,
 make user        # buat akun admin panel (atau pakai akun seeder)
 ```
 
-Buka <http://localhost:8080/admin>.
+Buka <http://localhost:8697/admin>.
 
 Akun seeder bawaan (password semuanya `password`):
 
@@ -42,7 +42,7 @@ Akun seeder bawaan (password semuanya `password`):
 | `reviewer@mysterypassenger.test` | Reviewer |
 | `surveyor@mysterypassenger.test` | Surveyor |
 
-> Port default: aplikasi `8080`, Vite `5173`, MySQL `3308` (host). Ubah via `.env`
+> Port default: aplikasi `8697`, Vite `5790`, MySQL `3925` (host). Ubah via `.env`
 > (`APP_PORT`, `VITE_PORT`, `DB_FORWARD_PORT`).
 
 ## Perintah penting (`make`)

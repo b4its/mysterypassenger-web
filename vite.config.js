@@ -20,7 +20,9 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 5173,
         strictPort: true,
-        hmr: { host: 'localhost' },     // browser di host, proses di container
+        // Port host dipetakan dari VITE_PORT (lihat compose.yaml); browser
+        // di host harus menyambung ke port host, bukan 5173 internal kontainer.
+        hmr: { host: 'localhost', clientPort: 5790 },
         watch: {
             usePolling: true,           // perlu pada bind mount Docker Desktop
             ignored: ['**/storage/framework/views/**'],
