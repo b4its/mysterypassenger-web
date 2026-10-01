@@ -64,6 +64,22 @@ return [
             ]) : [],
         ],
 
+        // Koneksi opsional ke database Mystery Passenger v1 (untuk migrate:from-v1).
+        'v1_mysql' => [
+            'driver' => 'mysql',
+            'host' => env('V1_DB_HOST', '127.0.0.1'),
+            'port' => env('V1_DB_PORT', '3306'),
+            'database' => env('V1_DB_DATABASE', 'webmpassenger'),
+            'username' => env('V1_DB_USERNAME', 'root'),
+            'password' => env('V1_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
