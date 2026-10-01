@@ -117,3 +117,46 @@ it('tidak menyimpan objek kolom (closure) ke cache', function () {
     expect(cache()->has('survey_table_dynamic_fields'))->toBeTrue()
         ->and(cache()->get('survey_table_dynamic_fields'))->toBeArray();
 });
+
+it('meng-eager-load fieldValues agar kolom dinamis tak melanggar preventLazyLoading', function () {
+    actingAsAdmin();
+
+    // Regresi: kolom dinamis memanggil Survey::field() → fieldValues. Bila tidak
+    // di-eager-load, preventLazyLoading melempar LazyLoadingViolationException.
+    expect(SurveyResource::getEloquentQuery()->getEagerLoads())
+        ->toHaveKey('fieldValues');
+});
+
+it('merender tabel dengan kolom dinamis aktif tanpa melanggar lazy loading', function () {
+    actingAsAdmin();
+
+    // Pastikan cache kolom dinamis terisi dari field show_in_table.
+    config()->set('cache.default', 'database');
+    cache()->flush();
+
+    $template = FormTemplate::factory()->create();
+    TemplateField::factory()->create([
+        'form_template_id' => $template->id,
+        'key' => 'nama_kapal',
+        'label' => 'Nama Kapal',
+        'show_in_table' => true,
+    ]);
+
+    $survey = Survey::factory()->for($template)->create();
+    SurveyFieldValue::factory()->create([
+        'survey_id' => $survey->id,
+        'field_key' => 'nama_kapal',
+        'field_label' => 'Nama Kapal',
+        'value' => 'KM Regression',
+        'value_text' => 'KM Regression',
+    ]);
+
+    // preventLazyLoading aktif di test (non-produksi) → ini akan gagal bila
+    // fieldValues tidak di-eager-load oleh SurveyResource::getEloquentQuery().
+    expect(app()->isProduction())->toBeFalse();
+
+    livewire(ListSurveys::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords([$survey])
+        ->assertSee('KM Regression');
+});

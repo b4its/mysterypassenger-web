@@ -54,7 +54,7 @@ class SurveyResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['transportMode', 'formTemplate', 'surveyor'])
+            ->with(['transportMode', 'formTemplate', 'surveyor', 'fieldValues'])
             ->visibleTo(auth()->user());
     }
 
