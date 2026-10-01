@@ -17,7 +17,12 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        hmr: { host: 'localhost' },     // browser di host, proses di container
         watch: {
+            usePolling: true,           // perlu pada bind mount Docker Desktop
             ignored: ['**/storage/framework/views/**'],
         },
     },
