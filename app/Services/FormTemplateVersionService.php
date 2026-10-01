@@ -25,9 +25,7 @@ class FormTemplateVersionService
                 'questions.questionOptions',
             ]);
 
-            $new = $template->replicate([
-                'status', 'published_at', 'created_by',
-            ]);
+            $new = $template->replicate($this->attributesToExclude($template));
             $new->version = $this->nextVersion($template);
             $new->status = TemplateStatus::Draft;
             $new->published_at = null;
@@ -109,5 +107,25 @@ class FormTemplateVersionService
             ->where('transport_mode_id', $template->transport_mode_id)
             ->where('slug', $template->slug)
             ->max('version') + 1;
+    }
+
+    /**
+     * Kolom yang tidak boleh ikut dikloning: status/terbitan dibuat ulang,
+     * dan kolom agregat dari `counts()` (mis. question_groups_count) bukan kolom nyata.
+     *
+     * @return array<int, string>
+     */
+    private function attributesToExclude(FormTemplate $template): array
+    {
+        $fixed = [
+            'id', 'status', 'published_at', 'created_by', 'created_at', 'updated_at', 'deleted_at',
+        ];
+
+        $aggregates = array_filter(
+            array_keys($template->getAttributes()),
+            fn (string $key) => str_ends_with($key, '_count'),
+        );
+
+        return array_merge($fixed, array_values($aggregates));
     }
 }
