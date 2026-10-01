@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\SurveyStatus;
 use App\Models\Survey;
 use DomainException;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 
 class SurveyStateMachine
@@ -44,7 +45,48 @@ class SurveyStateMachine
         }
 
         $survey->update($payload);
+        $survey = $survey->refresh();
 
-        return $survey->refresh();
+        $this->notifySurveyor($survey, $to, $note);
+
+        return $survey;
+    }
+
+    /** Beri tahu surveyor pemilik saat status berubah oleh reviewer/admin. */
+    private function notifySurveyor(Survey $survey, SurveyStatus $to, ?string $note): void
+    {
+        $notifiable = match ($to) {
+            SurveyStatus::Approved, SurveyStatus::Rejected, SurveyStatus::UnderReview,
+            SurveyStatus::Submitted => $survey->surveyor,
+            default => null,
+        };
+
+        if (! $notifiable) {
+            return;
+        }
+
+        $title = match ($to) {
+            SurveyStatus::Approved => 'Survei disetujui',
+            SurveyStatus::Rejected => 'Survei dikembalikan untuk revisi',
+            SurveyStatus::UnderReview => 'Survei sedang direview',
+            SurveyStatus::Submitted => 'Survei terkirim',
+            default => 'Status survei diperbarui',
+        };
+
+        $body = "Survei {$survey->code} — {$survey->transportMode?->name}.";
+        $color = in_array($to, [SurveyStatus::Approved], true) ? 'success'
+            : (in_array($to, [SurveyStatus::Rejected], true) ? 'danger' : 'info');
+
+        $notification = Notification::make()
+            ->title($title)
+            ->body($body)
+            ->status($color)
+            ->icon($to->getIcon());
+
+        if (filled($note)) {
+            $notification->body($body."\nCatatan: {$note}");
+        }
+
+        $notification->sendToDatabase($notifiable);
     }
 }
