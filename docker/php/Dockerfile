@@ -26,8 +26,8 @@ RUN docker-php-ext-configure gd --with-jpeg --with-freetype --with-webp \
     && docker-php-ext-configure intl \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath exif gd intl mbstring opcache pcntl pdo_mysql zip \
-    && pecl install redis \
-    && docker-php-ext-enable redis
+    && pecl install redis pcov \
+    && docker-php-ext-enable redis pcov
 
 # ── Composer ─────────────────────────────────────────────────────────────────
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
