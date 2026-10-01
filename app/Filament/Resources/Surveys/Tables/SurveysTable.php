@@ -166,25 +166,36 @@ class SurveysTable
             ]);
     }
 
-    /** @return array<TextColumn> */
+    /**
+     * Kolom tabel untuk setiap template_field dengan show_in_table = true.
+     *
+     * Metadata field (key+label) di-cache, BUKAN objek TextColumn — objek kolom
+     * memuat closure yang tidak dapat diserialisasi oleh cache driver database.
+     *
+     * @return array<int, TextColumn>
+     */
     public static function dynamicFieldColumns(): array
     {
-        return cache()->remember('survey_table_dynamic_columns', now()->addMinutes(10), function () {
+        $fields = cache()->remember('survey_table_dynamic_fields', now()->addMinutes(10), function () {
             return TemplateField::query()
                 ->where('show_in_table', true)
-                ->get()
+                ->get(['key', 'label'])
                 ->unique('key')
-                ->map(fn (TemplateField $field) => TextColumn::make("field_{$field->key}")
-                    ->label($field->label)
-                    ->getStateUsing(fn (Survey $record) => $record->field($field->key))
-                    ->toggleable()
-                    ->searchable(query: fn (Builder $q, string $search) => $q->whereHas(
-                        'fieldValues',
-                        fn (Builder $fv) => $fv->where('field_key', $field->key)
-                            ->where('value_text', 'like', "%{$search}%"),
-                    )))
+                ->map(fn (TemplateField $field) => ['key' => $field->key, 'label' => $field->label])
                 ->values()
                 ->all();
         });
+
+        return collect($fields)
+            ->map(fn (array $field) => TextColumn::make("field_{$field['key']}")
+                ->label($field['label'])
+                ->getStateUsing(fn (Survey $record) => $record->field($field['key']))
+                ->toggleable()
+                ->searchable(query: fn (Builder $q, string $search) => $q->whereHas(
+                    'fieldValues',
+                    fn (Builder $fv) => $fv->where('field_key', $field['key'])
+                        ->where('value_text', 'like', "%{$search}%"),
+                )))
+            ->all();
     }
 }

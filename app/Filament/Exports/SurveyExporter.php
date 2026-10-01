@@ -49,17 +49,21 @@ class SurveyExporter extends Exporter
     /** @return array<ExportColumn> */
     protected static function dynamicFieldColumns(): array
     {
-        return cache()->remember('survey_export_dynamic_columns', now()->addMinutes(10), function () {
+        $fields = cache()->remember('survey_export_dynamic_fields', now()->addMinutes(10), function () {
             return TemplateField::query()
-                ->get()
+                ->get(['key', 'label'])
                 ->unique('key')
-                ->map(fn (TemplateField $field) => ExportColumn::make("field_{$field->key}")
-                    ->label($field->label)
-                    ->state(fn (Survey $record) => $record->fieldValues
-                        ->firstWhere('field_key', $field->key)?->value_text))
+                ->map(fn (TemplateField $field) => ['key' => $field->key, 'label' => $field->label])
                 ->values()
                 ->all();
         });
+
+        return collect($fields)
+            ->map(fn (array $field) => ExportColumn::make("field_{$field['key']}")
+                ->label($field['label'])
+                ->state(fn (Survey $record) => $record->fieldValues
+                    ->firstWhere('field_key', $field['key'])?->value_text))
+            ->all();
     }
 
     public static function modifyQuery(Builder $query): Builder

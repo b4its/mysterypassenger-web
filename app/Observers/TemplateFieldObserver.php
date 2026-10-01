@@ -18,7 +18,7 @@ class TemplateFieldObserver
 
     private function forget(): void
     {
-        cache()->forget('survey_table_dynamic_columns');
-        cache()->forget('survey_export_dynamic_columns');
+        cache()->forget('survey_table_dynamic_fields');
+        cache()->forget('survey_export_dynamic_fields');
     }
 }
