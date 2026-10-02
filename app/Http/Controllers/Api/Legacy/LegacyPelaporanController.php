@@ -129,9 +129,15 @@ class LegacyPelaporanController extends Controller
 
         $service->save($survey, $state, submit: true);
 
-        // Upload bukti jika dikirim di multipart request
-        if ($request->hasFile('bukti_upload')) {
-            $file = $request->file('bukti_upload');
+        // Upload bukti jika dikirim di multipart request. Klien legacy kadang
+        // mengirim array; ambil berkas pertama agar tidak fatal error.
+        $file = $request->file('bukti_upload');
+
+        if (is_array($file)) {
+            $file = collect($file)->filter()->first();
+        }
+
+        if ($file) {
             $path = $file->store($survey->uuid, 'survey_media');
             $firstAnswer = $survey->answers()->first();
             if ($firstAnswer) {
@@ -154,6 +160,16 @@ class LegacyPelaporanController extends Controller
 
     public function media(Request $request, string $path): StreamedResponse|BinaryFileResponse
     {
+        // Path media disimpan sebagai "{survey_uuid}/{filename}". Wajib dipastikan
+        // berkas memang milik survei yang boleh dilihat user ini, agar surveyor
+        // tidak dapat mengunduh bukti milik surveyor lain (IDOR).
+        $uuid = explode('/', $path, 2)[0] ?? '';
+
+        $survey = Survey::where('uuid', $uuid)->first();
+
+        abort_if($survey === null, 404, 'Berkas media tidak ditemukan.');
+        $this->authorize('view', $survey);
+
         $disk = Storage::disk('survey_media');
         abort_unless($disk->exists($path), 404, 'Berkas media tidak ditemukan.');
 

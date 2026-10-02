@@ -1,13 +1,18 @@
 <?php
 
+use App\Enums\SurveyStatus;
 use App\Models\FormTemplate;
 use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\Survey;
+use App\Models\SurveyAnswer;
+use App\Models\SurveyAnswerMedia;
 use App\Models\TemplateField;
 use App\Models\TemplateSection;
 use App\Models\TransportMode;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(function () {
@@ -157,4 +162,60 @@ it('dapat melihat daftar dan detail pelaporan dalam format v1', function () {
         ->assertOk()
         ->assertJsonPath('status', 'success')
         ->assertJsonPath('data.id', $survey->id);
+});
+
+it('menyimpan pelaporan dengan status submitted (bukan approved)', function () {
+    $user = User::factory()->surveyor()->create();
+    Sanctum::actingAs($user);
+
+    $this->postJson('/api/pelaporan/store', [
+        'kapal' => 'KM Bahari',
+        'waktuPelaksanaan' => '2026-10-02 08:00:00',
+    ])->assertCreated();
+
+    $survey = Survey::where('evaluator_name', $user->name)->latest()->first();
+
+    expect($survey)->not->toBeNull()
+        ->and($survey->status)->toBe(SurveyStatus::Submitted);
+});
+
+it('menolak mengunduh media milik surveyor lain (IDOR) dan mengizinkan pemiliknya', function () {
+    Storage::fake('survey_media');
+
+    $owner = User::factory()->surveyor()->create();
+    $other = User::factory()->surveyor()->create();
+
+    $survey = Survey::factory()->for($this->template)->create(['user_id' => $owner->id]);
+    $answer = SurveyAnswer::factory()->create(['survey_id' => $survey->id]);
+
+    $path = $survey->uuid.'/bukti.jpg';
+    Storage::disk('survey_media')->put($path, 'RAHASIA');
+    SurveyAnswerMedia::create([
+        'survey_answer_id' => $answer->id,
+        'disk' => 'survey_media',
+        'path' => $path,
+    ]);
+
+    Sanctum::actingAs($other);
+    $this->get("/api/media/{$path}")->assertForbidden();
+
+    Sanctum::actingAs($owner);
+    $this->get("/api/media/{$path}")->assertOk();
+});
+
+it('menerima bukti_upload berupa array tanpa fatal error', function () {
+    Storage::fake('survey_media');
+
+    $user = User::factory()->surveyor()->create();
+    Sanctum::actingAs($user);
+
+    $res = $this->post('/api/pelaporan/store', [
+        'evaluator' => 'Tes Array',
+        'bukti_upload' => [
+            UploadedFile::fake()->image('a.jpg'),
+            UploadedFile::fake()->image('b.jpg'),
+        ],
+    ]);
+
+    $res->assertCreated();
 });
