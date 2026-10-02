@@ -112,7 +112,12 @@ class SurveySubmissionService
                 ),
             );
 
-            $this->syncMedia($answer, (array) ($input['media'] ?? []));
+            // Hanya rekonsiliasi media bila pemanggil benar-benar mengirim kunci
+            // `media` untuk jawaban ini. Tanpa penjagaan ini, aksi "submit" tanpa
+            // state (mis. POST /surveys/{id}/submit) akan menghapus seluruh bukti.
+            if (array_key_exists('media', $input)) {
+                $this->syncMedia($answer, (array) $input['media']);
+            }
         }
     }
 

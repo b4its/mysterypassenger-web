@@ -1,11 +1,14 @@
 <?php
 
 use App\Enums\AnswerType;
+use App\Enums\EvidenceRequirement;
 use App\Enums\SurveyStatus;
 use App\Models\FormTemplate;
 use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\Survey;
+use App\Models\SurveyAnswer;
+use App\Models\SurveyAnswerMedia;
 use App\Models\TemplateField;
 use App\Models\TemplateSection;
 use App\Models\TransportMode;
@@ -156,4 +159,42 @@ it('mengizinkan pengunduhan dokumen PDF survei', function () {
 
     $res->assertOk();
     expect($res->headers->get('content-type'))->toBe('application/pdf');
+});
+
+it('tidak menghapus bukti media saat submit tanpa mengirim state jawaban', function () {
+    $surveyor = User::factory()->surveyor()->create();
+    Sanctum::actingAs($surveyor, ['survey:write', 'survey:read']);
+
+    $template = FormTemplate::factory()->published()->create();
+    $group = QuestionGroup::factory()->for($template)->create();
+    $question = Question::factory()->for($template)->for($group, 'group')->create([
+        'answer_type' => AnswerType::Boolean,
+        'is_required' => false,
+        'evidence_requirement' => EvidenceRequirement::Optional,
+    ]);
+
+    $survey = Survey::factory()->for($template)->create([
+        'user_id' => $surveyor->id,
+        'status' => SurveyStatus::Draft,
+    ]);
+
+    $answer = SurveyAnswer::factory()->create([
+        'survey_id' => $survey->id,
+        'question_id' => $question->id,
+        'question_group_id' => $group->id,
+        'answer_type' => AnswerType::Boolean,
+        'value_boolean' => true,
+        'max_score' => 1,
+    ]);
+
+    SurveyAnswerMedia::create([
+        'survey_answer_id' => $answer->id,
+        'disk' => 'survey_media',
+        'path' => $survey->uuid.'/bukti.jpg',
+    ]);
+
+    $this->postJson(route('api.v2.surveys.submit', $survey))->assertOk();
+
+    expect(SurveyAnswerMedia::count())->toBe(1)
+        ->and($survey->fresh()->status)->toBe(SurveyStatus::Submitted);
 });
