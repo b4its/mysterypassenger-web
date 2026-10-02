@@ -39,7 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 'success' => Color::Emerald,
                 'warning' => Color::Amber,
             ])
-            ->globalSearch(true)
+            ->globalSearch(false)
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             ->sidebarCollapsibleOnDesktop()
