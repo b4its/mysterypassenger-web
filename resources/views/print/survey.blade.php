@@ -72,7 +72,7 @@
 
         <a class="btn" href="{{ route('surveys.print', ['survey' => $survey, 'section' => 'checklist', 'auto' => 0]) }}">Ceklist</a>
         <a class="btn" href="{{ route('surveys.print', ['survey' => $survey, 'section' => 'report', 'auto' => 0]) }}">Laporan</a>
-        <a class="btn" href="{{ route('surveys.pdf', ['survey' => $survey, 'section' => $section->value]) }}">Unduh PDF</a>
+        <a class="btn" href="{{ route('surveys.pdf', ['survey' => $survey, 'section' => $section->value, 'download' => 1]) }}">Unduh PDF</a>
         <button type="button" class="btn btn-primary" onclick="window.print()">Cetak</button>
     </div>
 

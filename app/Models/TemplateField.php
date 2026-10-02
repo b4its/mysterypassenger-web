@@ -36,6 +36,30 @@ class TemplateField extends Model
         ];
     }
 
+    /**
+     * Mengembalikan opsi pilihan dalam format pasangan [value => label].
+     *
+     * @return array<string, string>
+     */
+    public function optionPairs(): array
+    {
+        $pairs = [];
+
+        foreach ($this->options ?? [] as $key => $item) {
+            if (is_array($item)) {
+                $value = (string) ($item['value'] ?? $key);
+                $label = (string) ($item['label'] ?? $item['value'] ?? $value);
+                $pairs[$value] = $label;
+            } elseif (is_string($key)) {
+                $pairs[$key] = (string) $item;
+            } else {
+                $pairs[(string) $item] = (string) $item;
+            }
+        }
+
+        return $pairs;
+    }
+
     public function formTemplate(): BelongsTo
     {
         return $this->belongsTo(FormTemplate::class);

@@ -215,3 +215,27 @@ it('melarang surveyor mencetak survei orang lain', function () {
     $this->get(route('surveys.pdf', ['survey' => Survey::factory()->create()]))
         ->assertForbidden();
 });
+
+it('menyajikan pratinjau PDF secara inline secara default tanpa langsung mengunduh', function () {
+    actingAsAdmin();
+
+    $survey = Survey::factory()->submitted()->create();
+
+    $response = $this->get(route('surveys.pdf', ['survey' => $survey]));
+
+    $response->assertOk();
+    expect($response->headers->get('content-type'))->toContain('application/pdf');
+    expect($response->headers->get('content-disposition'))->toContain('inline');
+});
+
+it('mengunduh berkas PDF jika parameter download=1 disertakan', function () {
+    actingAsAdmin();
+
+    $survey = Survey::factory()->submitted()->create();
+
+    $response = $this->get(route('surveys.pdf', ['survey' => $survey, 'download' => 1]));
+
+    $response->assertOk();
+    expect($response->headers->get('content-type'))->toContain('application/pdf');
+    expect($response->headers->get('content-disposition'))->toContain('attachment');
+});

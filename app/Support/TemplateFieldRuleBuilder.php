@@ -28,12 +28,8 @@ class TemplateFieldRuleBuilder
             $rules[] = 'max:255';
         }
 
-        if ($field->field_type === FieldType::Select && is_array($field->options) && count($field->options) > 0) {
-            $options = array_map(function ($item) {
-                return is_array($item) ? ($item['value'] ?? $item) : $item;
-            }, $field->options);
-
-            $rules[] = Rule::in($options);
+        if ($field->field_type === FieldType::Select && ! empty($field->optionPairs())) {
+            $rules[] = Rule::in(array_keys($field->optionPairs()));
         }
 
         if (is_array($field->validation_rules)) {

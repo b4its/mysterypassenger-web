@@ -125,9 +125,11 @@
                                         <a href="{{ route('app.surveys.show', $item) }}" class="text-slate-600 hover:text-slate-900">
                                             Detail
                                         </a>
-                                        <a href="{{ route('surveys.pdf', $item) }}" target="_blank" class="text-slate-500 hover:text-slate-700">
+                                        <button type="button"
+                                                onclick="openPdfPreviewModal('{{ route('surveys.pdf', $item) }}', '{{ $item->code }}')"
+                                                class="text-slate-500 hover:text-slate-700 cursor-pointer">
                                             PDF
-                                        </a>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>

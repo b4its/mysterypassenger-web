@@ -179,9 +179,7 @@ class SurveyFormSchemaBuilder
     /** @return array<string,string> */
     private function optionPairs(TemplateField $field): array
     {
-        return collect($field->options ?? [])
-            ->mapWithKeys(fn (array $o) => [$o['value'] => $o['label']])
-            ->all();
+        return $field->optionPairs();
     }
 
     /** @return array<int, mixed> */

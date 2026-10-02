@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\FieldType;
 use App\Enums\SurveyStatus;
 use App\Models\FormTemplate;
 use App\Models\Survey;
+use App\Models\TemplateField;
 use App\Models\User;
 
 it('mengarahkan tamu ke halaman login saat mengakses /app', function () {
@@ -229,4 +231,84 @@ it('surveyor tidak dapat melihat laporan milik surveyor lain', function () {
     $otherSurvey = Survey::factory()->create(['user_id' => $otherSurveyor->id]);
 
     $this->get(route('app.surveys.show', $otherSurvey))->assertForbidden();
+});
+
+it('dapat menampilkan formulir dengan field select berstruktur opsi array tanpa TypeError', function () {
+    $surveyor = actingAsSurveyor();
+
+    $template = FormTemplate::factory()->published()->create();
+
+    TemplateField::factory()->create([
+        'form_template_id' => $template->id,
+        'key' => 'kelas_tiket',
+        'label' => 'Kelas Tiket',
+        'field_type' => FieldType::Select,
+        'options' => [
+            ['value' => 'ekonomi', 'label' => 'Ekonomi'],
+            ['value' => 'bisnis', 'label' => 'Bisnis'],
+        ],
+        'is_required' => false,
+    ]);
+
+    $survey = Survey::factory()->create([
+        'form_template_id' => $template->id,
+        'transport_mode_id' => $template->transport_mode_id,
+        'user_id' => $surveyor->id,
+        'status' => SurveyStatus::Draft,
+    ]);
+
+    $this->get(route('app.surveys.fill', $survey))
+        ->assertOk()
+        ->assertSee('Kelas Tiket')
+        ->assertSee('value="ekonomi"', false)
+        ->assertSee('Ekonomi')
+        ->assertSee('value="bisnis"', false)
+        ->assertSee('Bisnis');
+
+    $this->post(route('app.surveys.update', $survey), [
+        'evaluator_name' => $survey->evaluator_name,
+        'executed_at' => now()->format('Y-m-d H:i:s'),
+        'fields' => ['kelas_tiket' => 'bisnis'],
+        'submit' => 0,
+    ])->assertRedirect(route('app.surveys.fill', $survey));
+
+    expect($survey->fresh()->field('kelas_tiket'))->toBe('bisnis');
+
+    $this->get(route('app.surveys.show', $survey))
+        ->assertOk()
+        ->assertSee('Kelas Tiket')
+        ->assertSee('bisnis');
+});
+
+it('menyediakan tombol pratinjau pdf dan modal reviewer pada antarmuka web', function () {
+    $surveyor = actingAsSurveyor();
+
+    $survey = Survey::factory()->create([
+        'user_id' => $surveyor->id,
+        'status' => SurveyStatus::Draft,
+    ]);
+
+    // Halaman pengisian (fill) memiliki tombol pratinjau dan modal
+    $this->get(route('app.surveys.fill', $survey))
+        ->assertOk()
+        ->assertSee('Pratinjau PDF')
+        ->assertSee('openPdfPreviewModal', false)
+        ->assertSee('id="pdfPreviewModal"', false)
+        ->assertSee('id="pdfModalIframe"', false)
+        ->assertSee('Lembar Ceklist')
+        ->assertSee('Laporan Evaluasi')
+        ->assertSee('Unduh PDF');
+
+    // Halaman detail (show) juga memiliki tombol pratinjau PDF dan modal
+    $this->get(route('app.surveys.show', $survey))
+        ->assertOk()
+        ->assertSee('Pratinjau PDF')
+        ->assertSee('openPdfPreviewModal', false)
+        ->assertSee('id="pdfPreviewModal"', false);
+
+    // Halaman daftar laporan (index) memiliki trigger PDF modal
+    $this->get(route('app.surveys.index'))
+        ->assertOk()
+        ->assertSee('openPdfPreviewModal', false)
+        ->assertSee('id="pdfPreviewModal"', false);
 });

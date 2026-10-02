@@ -29,8 +29,11 @@ class SurveyPdfController extends Controller
             ->append('-', $section->value, '.pdf')
             ->toString();
 
-        return $request->boolean('inline')
-            ? $pdf->stream($filename)
-            : $pdf->download($filename);
+        $shouldDownload = $request->boolean('download')
+            || ($request->has('inline') && ! $request->boolean('inline'));
+
+        return $shouldDownload
+            ? $pdf->download($filename)
+            : $pdf->stream($filename);
     }
 }

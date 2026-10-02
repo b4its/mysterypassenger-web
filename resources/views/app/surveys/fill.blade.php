@@ -23,9 +23,15 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <a href="{{ route('surveys.pdf', $survey) }}" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition">
+            <button type="button"
+                    onclick="openPdfPreviewModal('{{ route('surveys.pdf', $survey) }}', '{{ $survey->code }}')"
+                    class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
                 Pratinjau PDF
-            </a>
+            </button>
         </div>
     </div>
 
@@ -79,6 +85,7 @@
                         @foreach($template->fields as $field)
                             @php
                                 $val = $values['fields'][$field->key] ?? old("fields.{$field->key}", $field->default_value);
+                                $valStr = is_array($val) ? (reset($val) ?: '') : (string) ($val ?? '');
                             @endphp
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700">
@@ -89,16 +96,22 @@
                                     <select name="fields[{{ $field->key }}]" {{ $field->is_required ? 'required' : '' }}
                                             class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
                                         <option value="">-- Pilih --</option>
-                                        @foreach($field->options ?? [] as $optVal => $optLabel)
-                                            <option value="{{ $optVal }}" {{ (string)$val === (string)$optVal ? 'selected' : '' }}>
+                                        @foreach($field->optionPairs() as $optVal => $optLabel)
+                                            <option value="{{ $optVal }}" {{ $valStr === (string)$optVal ? 'selected' : '' }}>
                                                 {{ $optLabel }}
                                             </option>
                                         @endforeach
                                     </select>
+                                @elseif($field->field_type->value === 'textarea')
+                                    <textarea name="fields[{{ $field->key }}]"
+                                              placeholder="{{ $field->placeholder ?? '' }}"
+                                              {{ $field->is_required ? 'required' : '' }}
+                                              rows="2"
+                                              class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">{{ $valStr }}</textarea>
                                 @else
-                                    <input type="{{ $field->field_type->value === 'number' ? 'number' : ($field->field_type->value === 'date' ? 'date' : 'text') }}"
+                                    <input type="{{ $field->field_type->value === 'number' ? 'number' : ($field->field_type->value === 'date' ? 'date' : ($field->field_type->value === 'datetime' ? 'datetime-local' : 'text')) }}"
                                            name="fields[{{ $field->key }}]"
-                                           value="{{ $val }}"
+                                           value="{{ $valStr }}"
                                            placeholder="{{ $field->placeholder ?? '' }}"
                                            {{ $field->is_required ? 'required' : '' }}
                                            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
@@ -200,9 +213,9 @@
                                         @elseif(in_array($question->answer_type->value, ['text', 'textarea']))
                                             <textarea name="answers[{{ $question->id }}]" rows="2"
                                                       placeholder="Tuliskan uraian hasil evaluasi..."
-                                                      class="block w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">{{ $currVal }}</textarea>
+                                                      class="block w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">{{ is_array($currVal) ? implode(', ', $currVal) : $currVal }}</textarea>
                                         @else
-                                            <input type="text" name="answers[{{ $question->id }}]" value="{{ $currVal }}"
+                                            <input type="text" name="answers[{{ $question->id }}]" value="{{ is_array($currVal) ? implode(', ', $currVal) : $currVal }}"
                                                    class="block w-full max-w-md rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
                                         @endif
 
@@ -270,7 +283,7 @@
                                         </div>
                                     @else
                                         <textarea name="answers[{{ $childQ->id }}]" rows="2" placeholder="Uraian hasil..."
-                                                  class="block w-full rounded-md border border-slate-300 p-2 text-xs">{{ $currVal }}</textarea>
+                                                  class="block w-full rounded-md border border-slate-300 p-2 text-xs">{{ is_array($currVal) ? implode(', ', $currVal) : $currVal }}</textarea>
                                     @endif
                                 </div>
                             @endforeach
