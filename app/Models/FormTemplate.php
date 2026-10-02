@@ -77,7 +77,9 @@ class FormTemplate extends Model
 
     public function assignedUsers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'template_assignments')->withTimestamps();
+        return $this->belongsToMany(User::class, 'template_assignments')
+            ->withPivot(['assigned_by', 'starts_at', 'due_at', 'notes'])
+            ->withTimestamps();
     }
 
     public function surveys(): HasMany
