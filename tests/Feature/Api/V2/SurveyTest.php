@@ -2,6 +2,7 @@
 
 use App\Enums\AnswerType;
 use App\Enums\EvidenceRequirement;
+use App\Enums\FieldType;
 use App\Enums\SurveyStatus;
 use App\Models\FormTemplate;
 use App\Models\Question;
@@ -239,4 +240,28 @@ it('mengabaikan filter tanggal yang tidak valid tanpa error 500', function () {
 
     $this->getJson(route('api.v2.surveys.index', ['from' => 'ngawur', 'until' => 'ngawur']))
         ->assertOk();
+});
+
+it('membuat survei meski template memiliki field bertipe datetime', function () {
+    $surveyor = User::factory()->surveyor()->create();
+    Sanctum::actingAs($surveyor, ['survey:write', 'survey:read']);
+
+    $mode = TransportMode::factory()->create();
+    $template = FormTemplate::factory()->for($mode)->published()->create();
+    $section = TemplateSection::factory()->for($template)->create();
+
+    TemplateField::factory()->for($template)->create([
+        'template_section_id' => $section->id,
+        'key' => 'waktu_inspeksi',
+        'label' => 'Waktu Inspeksi',
+        'field_type' => FieldType::DateTime,
+    ]);
+
+    $this->postJson(route('api.v2.surveys.store'), [
+        'idempotency_key' => 'DATETIMEFIELD00000000000000001',
+        'form_template_id' => $template->id,
+        'evaluator_name' => 'Petugas',
+        'executed_at' => now()->format('Y-m-d H:i:s'),
+        'fields' => ['waktu_inspeksi' => now()->format('Y-m-d H:i:s')],
+    ])->assertCreated();
 });
