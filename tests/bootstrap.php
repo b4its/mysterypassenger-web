@@ -14,7 +14,23 @@
  *   database non-uji (mencegah penghapusan data DB utama).
  *
  * Yang dibersihkan di sini hanya cache hasil Pest/PHPUnit (aman & idempoten).
+ *
+ * Selain itu, cache RUTE (`bootstrap/cache/routes-v7.php`) juga dihapus:
+ * rute update Livewire memakai hash dinamis, sehingga route cache yang basi
+ * memuat hash berbeda → request `POST /livewire-<hash>/update` 404 dan seluruh
+ * operasi interaktif Livewire/Filament (set/fillForm/aksi) menjadi no-op.
+ * Menghapus cache rute aman — rute didaftarkan ulang oleh panel provider.
  */
+$cacheFiles = ['routes-v7.php'];
+
+foreach ($cacheFiles as $file) {
+    $path = dirname(__DIR__).'/bootstrap/cache/'.$file;
+
+    if (is_file($path)) {
+        @unlink($path);
+    }
+}
+
 $phpunitCache = __DIR__.'/../.phpunit.cache';
 
 if (is_dir($phpunitCache)) {
