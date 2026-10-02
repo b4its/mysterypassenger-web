@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Enums\AnswerType;
 use App\Enums\OutputSection;
+use App\Enums\SurveyStatus;
+use App\Models\FormTemplate;
 use App\Models\Survey;
 use App\Models\SurveyAnswer;
+use App\Models\SurveyFieldValue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
@@ -28,6 +31,114 @@ class SurveyReportComposer
         $setting = $this->settings->resolve($survey->transportMode);
         $snapshot = $survey->meta;      // null jika masih draf → fallback ke relasi live
 
+        return $this->composeFrom($survey, $section, $setting, $snapshot);
+    }
+
+    /**
+     * Pratinjau dokumen dari sebuah template TANPA memerlukan survei nyata.
+     * Membangun Survey sementara (tidak disimpan) berisi data contoh sehingga
+     * admin dapat melihat hasil cetak untuk template apa pun.
+     *
+     * @return array<string, mixed>
+     */
+    public function composeForTemplate(FormTemplate $template, OutputSection $section): array
+    {
+        $template->loadMissing([
+            'transportMode',
+            'fields',
+            'rootGroups.questions.questionOptions',
+            'rootGroups.children.questions.questionOptions',
+            'rootGroups.children.children.questions.questionOptions',
+        ]);
+
+        $survey = new Survey([
+            'transport_mode_id' => $template->transport_mode_id,
+            'form_template_id' => $template->id,
+            'template_version' => $template->version,
+            'evaluator_name' => 'Nama Evaluator (contoh)',
+            'executed_at' => now(),
+            'location_text' => 'Lokasi contoh',
+            'status' => SurveyStatus::Draft,
+            'summary_note' => 'Contoh catatan ringkasan.',
+        ]);
+        $survey->code = 'PRATINJAU/'.$template->version;
+
+        // Relasi in-memory agar view tidak menyentuh DB.
+        $survey->setRelation('formTemplate', $template);
+        $survey->setRelation('transportMode', $template->transportMode);
+        $survey->setRelation('surveyor', null);
+
+        $survey->setRelation('fieldValues', $template->fields->map(fn ($field) => new SurveyFieldValue([
+            'template_field_id' => $field->id,
+            'field_key' => $field->key,
+            'field_label' => $field->label,
+            'value' => 'Contoh '.$field->label,
+            'value_text' => 'Contoh '.$field->label,
+        ])));
+
+        $questions = collect();
+        $template->rootGroups->each(function ($group) use (&$questions): void {
+            $collect = function ($g) use (&$questions, &$collect): void {
+                foreach ($g->questions as $q) {
+                    $questions->push([$g, $q]);
+                }
+                foreach ($g->children as $child) {
+                    $collect($child);
+                }
+            };
+            $collect($group);
+        });
+
+        $survey->setRelation('answers', $questions->map(function (array $pair) {
+            [$group, $question] = $pair;
+
+            // Set relasi in-memory agar tidak menyentuh DB (preventLazyLoading).
+            $question->setRelation('group', $group);
+            $question->setRelation('questionOptions', $question->questionOptions ?? collect());
+
+            $answer = new SurveyAnswer([
+                'question_id' => $question->id,
+                'question_group_id' => $group->id,
+                'answer_type' => $question->answer_type,
+                'max_score' => $question->max_score,
+                'note' => null,
+            ]);
+            $answer->setRelation('question', $question);
+            $answer->setRelation('media', collect());
+            $this->fillDummyAnswer($answer, $question);
+
+            return $answer;
+        }));
+
+        $setting = $this->settings->resolve($template->transportMode);
+
+        return $this->composeFrom($survey, $section, $setting, null);
+    }
+
+    /**
+     * Isi nilai contoh sesuai tipe jawaban (boolean default "iya").
+     */
+    private function fillDummyAnswer(SurveyAnswer $answer, $question): void
+    {
+        $firstOptionValue = $question->questionOptions->first()?->value;
+
+        match ($question->answer_type) {
+            AnswerType::Boolean => $answer->value_boolean = true,
+            AnswerType::Rating => $answer->value_number = $question->ratingScale()['max'],
+            AnswerType::Number => $answer->value_number = 0,
+            AnswerType::SelectSingle => $answer->value_text = $firstOptionValue ?? 'Contoh',
+            AnswerType::SelectMultiple => $answer->value_json = $firstOptionValue ? [$firstOptionValue] : [],
+            AnswerType::Date => $answer->value_text = now()->toDateString(),
+            AnswerType::File => $answer->value_text = null,
+            default => $answer->value_text = 'Contoh jawaban.',
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function composeFrom(Survey $survey, OutputSection $section, $setting, ?array $snapshot): array
+    {
         return [
             'survey' => $survey,
             'setting' => $setting,

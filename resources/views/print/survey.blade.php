@@ -71,9 +71,16 @@
     <div class="toolbar no-print">
         <span class="spacer">{{ $survey->code }} — {{ $title }}</span>
 
-        <a class="btn" href="{{ route('surveys.print', ['survey' => $survey, 'section' => 'checklist', 'auto' => 0]) }}">Ceklist</a>
-        <a class="btn" href="{{ route('surveys.print', ['survey' => $survey, 'section' => 'report', 'auto' => 0]) }}">Laporan</a>
-        <a class="btn" href="{{ route('surveys.pdf', ['survey' => $survey, 'section' => $section->value, 'download' => 1]) }}">Unduh PDF</a>
+        @if ($survey->exists)
+            <a class="btn" href="{{ route('surveys.print', ['survey' => $survey, 'section' => 'checklist', 'auto' => 0]) }}">Ceklist</a>
+            <a class="btn" href="{{ route('surveys.print', ['survey' => $survey, 'section' => 'report', 'auto' => 0]) }}">Laporan</a>
+            <a class="btn" href="{{ route('surveys.pdf', ['survey' => $survey, 'section' => $section->value, 'download' => 1]) }}">Unduh PDF</a>
+        @else
+            <span class="btn" style="cursor: default; background: #fef3c7; border-color: #fcd34d; color: #92400e;">
+                Mode Pratinjau (data contoh)
+            </span>
+        @endif
+
         <button type="button" class="btn btn-primary" onclick="window.print()">Cetak</button>
     </div>
 
