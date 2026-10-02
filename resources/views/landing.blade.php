@@ -26,13 +26,13 @@
             @if ($isAuthenticated)
                 <div class="flex items-center gap-3 text-sm">
                     <span class="hidden text-slate-500 sm:inline">Masuk sebagai <span class="font-medium text-slate-700">{{ $user->name }}</span></span>
-                    <a href="{{ \Filament\Facades\Filament::getHomeUrl() }}"
+                    <a href="{{ $user->isAdmin() ? url('/admin') : route('app.dashboard') }}"
                        class="rounded-lg border border-slate-200 bg-white px-4 py-2 font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900">
                         Buka Aplikasi
                     </a>
                 </div>
             @else
-                <a href="{{ route('filament.admin.auth.login') }}"
+                <a href="{{ route('login') }}"
                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
                     Masuk
                 </a>
@@ -64,9 +64,16 @@
                 @foreach ($actions as $action)
                     <a href="{{ $action['url'] }}"
                        class="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md">
-                        <span class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
-                            @include('partials.landing-icon', ['icon' => $action['icon']])
-                        </span>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
+                                @include('partials.landing-icon', ['icon' => $action['icon']])
+                            </span>
+                            @if($action['adminOnly'] ?? false)
+                                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    Khusus Admin
+                                </span>
+                            @endif
+                        </div>
                         <h2 class="text-lg font-semibold text-slate-900">{{ $action['title'] }}</h2>
                         <p class="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{{ $action['description'] }}</p>
                         <span class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
@@ -81,8 +88,8 @@
 
             @guest
                 <p class="mt-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    Anda belum masuk. Ketiga aksi di atas memerlukan akun —
-                    <a href="{{ route('filament.admin.auth.login') }}" class="font-semibold underline">masuk di sini</a>
+                    Anda belum masuk. Aksi di atas memerlukan akun —
+                    <a href="{{ route('login') }}" class="font-semibold underline">masuk di sini</a>
                     atau hubungi administrator untuk mendapatkan akses.
                 </p>
             @endguest

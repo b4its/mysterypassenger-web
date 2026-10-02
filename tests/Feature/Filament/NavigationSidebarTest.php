@@ -4,8 +4,12 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Filament\Facades\Filament;
 
-it('menampilkan seluruh grup dan resource navigasi pada sidebar untuk peran Admin', function () {
-    actingAsAdmin();
+it('mengizinkan peran Admin mengakses panel Filament dan menampilkan seluruh grup navigasi', function () {
+    $admin = actingAsAdmin();
+
+    expect($admin->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
+
+    $this->get('/admin')->assertOk();
 
     $navigation = Filament::getNavigation();
 
@@ -26,45 +30,23 @@ it('menampilkan seluruh grup dan resource navigasi pada sidebar untuk peran Admi
     );
 });
 
-it('hanya menampilkan menu Survei dan Beranda pada sidebar untuk peran Surveyor', function () {
-    actingAsSurveyor();
+it('melarang peran Surveyor mengakses panel admin atau filament', function () {
+    $surveyor = actingAsSurveyor();
 
-    $navigation = Filament::getNavigation();
+    expect($surveyor->canAccessPanel(Filament::getPanel('admin')))->toBeFalse();
 
-    $allVisibleLabels = collect($navigation)
-        ->flatMap(fn ($group) => $group->getItems())
-        ->filter(fn ($item) => $item->isVisible())
-        ->map(fn ($item) => $item->getLabel())
-        ->all();
-
-    expect($allVisibleLabels)->toContain('Beranda', 'Survei')
-        ->and($allVisibleLabels)->not->toContain(
-            'Pengaturan Pertanyaan',
-            'Jenis Transportasi',
-            'Template Formulir',
-            'Pengaturan Cetak',
-            'Pengguna',
-        );
+    $this->get('/admin')->assertForbidden();
+    $this->get('/admin/question-setup')->assertForbidden();
+    $this->get('/admin/form-templates')->assertForbidden();
 });
 
-it('menampilkan menu Survei dan Jenis Transportasi untuk peran Reviewer', function () {
-    actingAsReviewer();
+it('melarang peran Reviewer mengakses panel admin atau filament', function () {
+    $reviewer = actingAsReviewer();
 
-    $navigation = Filament::getNavigation();
+    expect($reviewer->canAccessPanel(Filament::getPanel('admin')))->toBeFalse();
 
-    $allVisibleLabels = collect($navigation)
-        ->flatMap(fn ($group) => $group->getItems())
-        ->filter(fn ($item) => $item->isVisible())
-        ->map(fn ($item) => $item->getLabel())
-        ->all();
-
-    expect($allVisibleLabels)->toContain('Beranda', 'Survei', 'Jenis Transportasi')
-        ->and($allVisibleLabels)->not->toContain(
-            'Pengaturan Pertanyaan',
-            'Template Formulir',
-            'Pengaturan Cetak',
-            'Pengguna',
-        );
+    $this->get('/admin')->assertForbidden();
+    $this->get('/admin/question-setup')->assertForbidden();
 });
 
 it('membuat pengguna filament dengan peran Admin secara eksplisit via CLI', function () {

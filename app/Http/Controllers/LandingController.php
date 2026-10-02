@@ -10,12 +10,9 @@ class LandingController extends Controller
      * Halaman selamat datang publik di "/".
      *
      * Menyajikan tiga pilihan utama sesuai alur aplikasi:
-     *  - Membuat laporan (survei baru)
-     *  - Melihat laporan (daftar & detail survei)
-     *  - Membuat/mengustomisasi pertanyaan (template formulir)
-     *
-     * Setiap aksi mengarah ke panel admin; bila pengguna belum masuk,
-     * Filament otomatis mengarahkan ke halaman login.
+     *  - Membuat laporan (survei baru via web app non-Filament)
+     *  - Melihat laporan (daftar & detail survei via web app non-Filament)
+     *  - Membuat/mengustomisasi pertanyaan (khusus Administrator di panel Filament)
      */
     public function __invoke(): View
     {
@@ -27,7 +24,7 @@ class LandingController extends Controller
     }
 
     /**
-     * @return array<int, array{key: string, title: string, description: string, icon: string, url: string, requiresAuth: bool}>
+     * @return array<int, array{key: string, title: string, description: string, icon: string, url: string, requiresAuth: bool, adminOnly?: bool}>
      */
     private function actions(): array
     {
@@ -35,26 +32,27 @@ class LandingController extends Controller
             [
                 'key' => 'create-report',
                 'title' => 'Buat Laporan',
-                'description' => 'Mulai sesi survei baru: pilih moda transportasi dan template, lalu isi kuesioner.',
+                'description' => 'Mulai sesi survei baru: pilih moda transportasi dan template aktif, lalu isi kuesioner evaluasi.',
                 'icon' => 'plus-circle',
-                'url' => route('filament.admin.resources.surveys.create'),
+                'url' => route('app.surveys.create'),
                 'requiresAuth' => true,
             ],
             [
                 'key' => 'view-reports',
                 'title' => 'Lihat Laporan',
-                'description' => 'Telusuri daftar laporan yang sudah dibuat, lihat detail, cetak, dan ekspor.',
+                'description' => 'Telusuri daftar laporan yang sudah dibuat, lihat detail, pantau status review, dan cetak PDF.',
                 'icon' => 'document-text',
-                'url' => route('filament.admin.resources.surveys.index'),
+                'url' => route('app.surveys.index'),
                 'requiresAuth' => true,
             ],
             [
                 'key' => 'manage-questions',
                 'title' => 'Buat / Kustom Pertanyaan',
-                'description' => 'Susun template formulir: indikator, pertanyaan, tipe jawaban, bobot, dan field profil.',
+                'description' => 'Susun template formulir: indikator, pertanyaan, tipe jawaban, dan bobot. Khusus Administrator di Panel Admin.',
                 'icon' => 'adjustments-horizontal',
                 'url' => route('filament.admin.resources.form-templates.index'),
                 'requiresAuth' => true,
+                'adminOnly' => true,
             ],
         ];
     }

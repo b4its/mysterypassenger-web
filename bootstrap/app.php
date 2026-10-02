@@ -15,8 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Tamu yang mengakses route terproteksi diarahkan ke login panel Filament.
-        $middleware->redirectGuestsTo(fn () => route('filament.admin.auth.login'));
+        // Tamu web diarahkan ke login umum; akses /admin diarahkan ke login Filament.
+        $middleware->redirectGuestsTo(
+            fn (Request $request) => $request->is('admin*')
+                ? route('filament.admin.auth.login')
+                : route('login')
+        );
 
         $middleware->alias([
             'abilities' => CheckAbilities::class,

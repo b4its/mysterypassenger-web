@@ -19,32 +19,40 @@ it('menampilkan tiga pilihan utama pada halaman selamat datang', function () {
         ->assertSee('Buat / Kustom Pertanyaan');
 });
 
-it('menautkan setiap pilihan ke halaman terkait di panel', function () {
+it('menautkan aksi laporan ke aplikasi web non-filament dan kustom pertanyaan ke panel admin', function () {
     $response = $this->get('/');
 
     $response->assertOk()
-        ->assertSee(route('filament.admin.resources.surveys.create'), false)
-        ->assertSee(route('filament.admin.resources.surveys.index'), false)
+        ->assertSee(route('app.surveys.create'), false)
+        ->assertSee(route('app.surveys.index'), false)
         ->assertSee(route('filament.admin.resources.form-templates.index'), false);
 });
 
-it('menampilkan ajakan masuk bagi tamu', function () {
+it('menampilkan ajakan masuk bagi tamu dengan tautan ke halaman login web', function () {
     $response = $this->get('/');
 
     $response->assertOk()
         ->assertSee('Anda belum masuk')
-        ->assertSee(route('filament.admin.auth.login'), false);
+        ->assertSee(route('login'), false);
 });
 
-it('menampilkan identitas pengguna dan tautan dasbor setelah masuk', function () {
-    $user = User::factory()->admin()->create(['name' => 'Petugas Uji']);
-
-    $response = $this->actingAs($user)->get('/');
+it('menampilkan identitas pengguna dan tautan dasbor yang sesuai setelah masuk', function () {
+    $admin = User::factory()->admin()->create(['name' => 'Admin Uji']);
+    $response = $this->actingAs($admin)->get('/');
 
     $response->assertOk()
-        ->assertSee('Petugas Uji')
+        ->assertSee('Admin Uji')
         ->assertSee('Buka Aplikasi')
+        ->assertSee(url('/admin'), false)
         ->assertDontSee('Anda belum masuk');
+
+    $surveyor = User::factory()->surveyor()->create(['name' => 'Surveyor Uji']);
+    $responseSurveyor = $this->actingAs($surveyor)->get('/');
+
+    $responseSurveyor->assertOk()
+        ->assertSee('Surveyor Uji')
+        ->assertSee('Buka Aplikasi')
+        ->assertSee(route('app.dashboard'), false);
 });
 
 it('tetap dapat diakses tanpa autentikasi', function () {

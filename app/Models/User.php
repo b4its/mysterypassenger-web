@@ -41,7 +41,9 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_active;
+        // Panel Filament khusus ADMIN. Reviewer & surveyor memakai halaman web
+        // non-Filament (lihat routes/web.php, prefix /app).
+        return $this->is_active && $this->isAdmin();
     }
 
     public function surveys(): HasMany
