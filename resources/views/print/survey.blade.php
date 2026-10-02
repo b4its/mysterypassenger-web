@@ -39,6 +39,7 @@
         table.data th, table.data td { border: 1px solid var(--line); padding: 5px 6px; vertical-align: top; }
         table.data thead th { background: #eceff1; text-transform: uppercase; font-size: .72rem; text-align: center; }
         .c { text-align: center } .r { text-align: right } .b { font-weight: 700 }
+        .check { font-size: 1rem; font-weight: 700; line-height: 1; }
         .photo { max-width: 110px; max-height: 84px; margin: 2px; }
         .photo-empty { color: #6b7280; font-style: italic; font-size: .72rem; }
 

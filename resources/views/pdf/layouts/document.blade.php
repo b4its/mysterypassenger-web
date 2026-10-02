@@ -36,6 +36,8 @@
         .badge-yes { font-weight: bold; }
         .badge-no  { font-weight: bold; }
 
+        .check { font-size: 12px; font-weight: bold; line-height: 1; }
+
         .photo { max-width: 86px; max-height: 68px; margin: 1px; }
         .photo-empty { font-size: 8px; color: #666; font-style: italic; }
 

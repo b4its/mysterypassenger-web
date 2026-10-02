@@ -239,3 +239,86 @@ it('mengunduh berkas PDF jika parameter download=1 disertakan', function () {
     expect($response->headers->get('content-type'))->toContain('application/pdf');
     expect($response->headers->get('content-disposition'))->toContain('attachment');
 });
+
+it('menampilkan kolom Kondisi terbelah Iya/Tidak dengan centang sesuai jawaban (PDF)', function () {
+    actingAsAdmin();
+
+    $template = FormTemplate::factory()->published()->create();
+    $group = QuestionGroup::factory()->for($template)->create();
+
+    $yes = Question::factory()->for($template)->for($group, 'group')->create([
+        'answer_type' => AnswerType::Boolean, 'max_score' => 1, 'sort_order' => 1,
+    ]);
+    $no = Question::factory()->for($template)->for($group, 'group')->create([
+        'answer_type' => AnswerType::Boolean, 'max_score' => 1, 'sort_order' => 2,
+    ]);
+
+    $survey = Survey::factory()->for($template)->submitted()->create();
+
+    SurveyAnswer::factory()->create([
+        'survey_id' => $survey->id, 'question_id' => $yes->id, 'question_group_id' => $group->id,
+        'answer_type' => AnswerType::Boolean, 'value_boolean' => true,
+    ]);
+    SurveyAnswer::factory()->create([
+        'survey_id' => $survey->id, 'question_id' => $no->id, 'question_group_id' => $group->id,
+        'answer_type' => AnswerType::Boolean, 'value_boolean' => false,
+    ]);
+
+    $data = app(SurveyReportComposer::class)->compose($survey->refresh(), OutputSection::Checklist);
+    $html = view('pdf.survey-checklist', $data)->render();
+
+    // Header terbelah: KONDISI + sub-kolom Iya/Tidak.
+    expect($html)->toContain('Kondisi')
+        ->toContain('>Iya<')
+        ->toContain('>Tidak<');
+
+    // Baris: jawaban "iya" → centang di kolom Iya; "tidak" → centang di kolom Tidak.
+    $doc = new DOMDocument;
+    @$doc->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+    $xp = new DOMXPath($doc);
+
+    $rows = $xp->query("//table[contains(@class,'data')]//tbody/tr");
+    $cellText = function (DOMNode $tr) {
+        return array_map(fn ($td) => trim($td->textContent), iterator_to_array($tr->childNodes));
+    };
+
+    // Cari baris yang memuat teks pertanyaan "yes" dan "no".
+    $findRow = function (string $needle) use ($rows) {
+        foreach ($rows as $tr) {
+            if (str_contains($tr->textContent, $needle)) {
+                return $tr;
+            }
+        }
+
+        return null;
+    };
+
+    $yesRow = $findRow($yes->text);
+    $noRow = $findRow($no->text);
+
+    expect($yesRow)->not->toBeNull()->and($noRow)->not->toBeNull();
+
+    // Kolom kondisi ada dua (Iya lalu Tidak); centang (✓) harus di kolom yang tepat.
+    $yesCells = array_values(array_filter($cellText($yesRow), fn ($t) => $t === '✓' || $t === ''));
+    $yesChecks = array_values(array_map(fn ($td) => trim($td->textContent),
+        iterator_to_array($xp->query(".//td[contains(@class,'check')]", $yesRow))));
+    expect($yesChecks[0])->toBe('✓')->and($yesChecks[1])->toBe('');
+
+    $noChecks = array_values(array_map(fn ($td) => trim($td->textContent),
+        iterator_to_array($xp->query(".//td[contains(@class,'check')]", $noRow))));
+    expect($noChecks[0])->toBe('')->and($noChecks[1])->toBe('✓');
+});
+
+it('menerapkan kolom Kondisi Iya/Tidak pada halaman print', function () {
+    actingAsAdmin();
+
+    $template = FormTemplate::factory()->published()->withChecklist(1, 2)->create();
+    $survey = Survey::factory()->for($template)->submitted()->withAnswers(1, 2, allTrue: true)->create();
+
+    $html = view('print.survey', app(SurveyReportComposer::class)
+        ->compose($survey->refresh(), OutputSection::Checklist) + ['autoPrint' => false])->render();
+
+    expect($html)->toContain('>Iya<')
+        ->toContain('>Tidak<')
+        ->toContain('✓');
+});

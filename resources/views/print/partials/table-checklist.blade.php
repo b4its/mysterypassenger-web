@@ -1,16 +1,20 @@
 <table class="data">
     <thead>
         <tr>
-            <th style="width: 4%">No</th>
-            <th style="width: 18%">Indikator</th>
-            <th>Sub Indikator</th>
-            <th style="width: 10%">Kondisi</th>
+            <th style="width: 4%" rowspan="2">No</th>
+            <th style="width: 18%" rowspan="2">Indikator</th>
+            <th rowspan="2">Sub Indikator</th>
+            <th colspan="2" style="width: 14%">Kondisi</th>
             @if ($showScores)
-                <th style="width: 8%">Skor</th>
+                <th style="width: 8%" rowspan="2">Skor</th>
             @endif
             @if ($showPhotos)
-                <th style="width: 18%">Foto</th>
+                <th style="width: 18%" rowspan="2">Foto</th>
             @endif
+        </tr>
+        <tr>
+            <th style="width: 7%">Iya</th>
+            <th style="width: 7%">Tidak</th>
         </tr>
     </thead>
     <tbody>
@@ -32,7 +36,12 @@
                         @endif
                     </td>
 
-                    <td class="c b">{{ $row['answer'] }}</td>
+                    @if ($row['isBoolean'])
+                        <td class="c check">{{ $row['isPositive'] ? '✓' : '' }}</td>
+                        <td class="c check">{{ ! $row['isPositive'] ? '✓' : '' }}</td>
+                    @else
+                        <td class="c" colspan="2">{{ $row['answer'] }}</td>
+                    @endif
 
                     @if ($showScores)
                         <td class="c">
@@ -59,7 +68,7 @@
 
         @if ($showScores && $groups->isNotEmpty())
             <tr>
-                <td colspan="3" class="r b">TOTAL</td>
+                <td colspan="5" class="r b">TOTAL</td>
                 <td class="c b">{{ $survey->score_percentage !== null ? number_format((float) $survey->score_percentage, 1, ',', '.').'%' : '-' }}</td>
                 <td class="c b">
                     {{ number_format((float) $survey->total_score, 2, ',', '.') }} /
