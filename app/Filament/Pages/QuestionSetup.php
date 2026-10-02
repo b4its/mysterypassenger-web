@@ -23,9 +23,11 @@ class QuestionSetup extends Page
 
     protected static ?string $navigationLabel = 'Pengaturan Pertanyaan';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Konfigurasi Formulir';
+
     protected static ?string $title = 'Pengaturan Pertanyaan';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 0;
 
     protected string $view = 'filament.pages.question-setup';
 

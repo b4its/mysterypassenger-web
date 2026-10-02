@@ -13,6 +13,22 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ReviewController extends Controller
 {
+    /**
+     * Relasi wajib untuk serialisasi SurveyResource (lihat SurveyController).
+     *
+     * @var array<int, string>
+     */
+    private const SURVEY_RELATIONS = [
+        'transportMode',
+        'formTemplate',
+        'surveyor',
+        'reviewer',
+        'fieldValues',
+        'answers.media',
+        'answers.question.group',
+        'answers.question.questionOptions',
+    ];
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $user = $request->user();
@@ -22,7 +38,7 @@ class ReviewController extends Controller
 
         $query = Survey::query()
             ->where('status', $status)
-            ->with(['transportMode', 'formTemplate', 'surveyor'])
+            ->with(['transportMode', 'formTemplate', 'surveyor', 'reviewer'])
             ->latest('submitted_at');
 
         if ($request->filled('transport_mode_id')) {
@@ -46,15 +62,7 @@ class ReviewController extends Controller
             $request->input('note'),
         );
 
-        $survey->fresh([
-            'transportMode',
-            'formTemplate',
-            'surveyor',
-            'reviewer',
-            'fieldValues',
-            'answers.media',
-            'answers.question',
-        ]);
+        $survey = $survey->fresh(self::SURVEY_RELATIONS);
 
         return SurveyResource::make($survey);
     }

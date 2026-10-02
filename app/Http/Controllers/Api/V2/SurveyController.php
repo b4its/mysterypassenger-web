@@ -17,11 +17,30 @@ use Illuminate\Support\Carbon;
 
 class SurveyController extends Controller
 {
+    /**
+     * Relasi yang wajib dimuat sebelum serialisasi SurveyResource.
+     * `question.questionOptions` & `question.group` dibutuhkan oleh
+     * SurveyAnswerResource::displayValue()/typedValue() (mis. rating, pilihan
+     * ganda) sehingga preventLazyLoading tidak melempar exception.
+     *
+     * @var array<int, string>
+     */
+    private const SURVEY_RELATIONS = [
+        'transportMode',
+        'formTemplate',
+        'surveyor',
+        'reviewer',
+        'fieldValues',
+        'answers.media',
+        'answers.question.group',
+        'answers.question.questionOptions',
+    ];
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Survey::query()
             ->visibleTo($request->user())
-            ->with(['transportMode', 'formTemplate', 'surveyor'])
+            ->with(['transportMode', 'formTemplate', 'surveyor', 'reviewer'])
             ->latest('executed_at');
 
         if ($request->filled('status')) {
@@ -49,15 +68,7 @@ class SurveyController extends Controller
     {
         $this->authorize('view', $survey);
 
-        $survey->load([
-            'transportMode',
-            'formTemplate',
-            'surveyor',
-            'reviewer',
-            'fieldValues',
-            'answers.media',
-            'answers.question',
-        ]);
+        $survey->load(self::SURVEY_RELATIONS);
 
         return SurveyResource::make($survey);
     }
@@ -66,7 +77,7 @@ class SurveyController extends Controller
     {
         // Idempotensi: kembalikan yang sudah ada bila idempotency_key cocok
         if ($existing = Survey::where('idempotency_key', $request->string('idempotency_key'))->first()) {
-            $existing->load(['transportMode', 'formTemplate', 'surveyor', 'fieldValues', 'answers.media']);
+            $existing->load(self::SURVEY_RELATIONS);
 
             return SurveyResource::make($existing)->response()->setStatusCode(200);
         }
@@ -93,14 +104,7 @@ class SurveyController extends Controller
 
         $service->save($survey, $request->toFormState(), submit: $request->boolean('submit'));
 
-        $survey = $survey->fresh([
-            'transportMode',
-            'formTemplate',
-            'surveyor',
-            'fieldValues',
-            'answers.media',
-            'answers.question',
-        ]);
+        $survey = $survey->fresh(self::SURVEY_RELATIONS);
 
         return SurveyResource::make($survey)->response()->setStatusCode(201);
     }
@@ -111,14 +115,7 @@ class SurveyController extends Controller
 
         $service->save($survey, $request->toFormState(), submit: $request->boolean('submit'));
 
-        $survey = $survey->fresh([
-            'transportMode',
-            'formTemplate',
-            'surveyor',
-            'fieldValues',
-            'answers.media',
-            'answers.question',
-        ]);
+        $survey = $survey->fresh(self::SURVEY_RELATIONS);
 
         return SurveyResource::make($survey);
     }
@@ -129,14 +126,7 @@ class SurveyController extends Controller
 
         $service->save($survey, [], submit: true);
 
-        $survey = $survey->fresh([
-            'transportMode',
-            'formTemplate',
-            'surveyor',
-            'fieldValues',
-            'answers.media',
-            'answers.question',
-        ]);
+        $survey = $survey->fresh(self::SURVEY_RELATIONS);
 
         return SurveyResource::make($survey);
     }

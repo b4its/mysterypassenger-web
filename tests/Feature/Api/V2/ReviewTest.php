@@ -57,3 +57,37 @@ it('melarang surveyor mengakses endpoint review', function () {
     $this->getJson(route('api.v2.review.surveys.index'))
         ->assertForbidden();
 });
+
+it('menyertakan reviewer & jawaban pada antrean tanpa lazy loading', function () {
+    $reviewer = User::factory()->reviewer()->create();
+    Sanctum::actingAs($reviewer, ['survey:review', 'survey:read']);
+
+    $template = FormTemplate::factory()->published()->withChecklist(1, 2)->create();
+    // Survei sudah disetujui oleh reviewer ini (sehingga relasi `reviewer` diakses).
+    $survey = Survey::factory()->for($template)->submitted()->withAnswers(1, 2)->create([
+        'reviewed_by' => $reviewer->id,
+        'reviewed_at' => now(),
+        'status' => SurveyStatus::Submitted,
+    ]);
+
+    $response = $this->getJson(route('api.v2.review.surveys.index'));
+
+    $response->assertOk()
+        ->assertJsonPath('data.0.reviewed_by', $reviewer->id)
+        ->assertJsonPath('data.0.reviewer_name', $reviewer->name);
+});
+
+it('memuat ulang survey setelah transisi sehingga status terbaru terserialisasi', function () {
+    $reviewer = User::factory()->reviewer()->create();
+    Sanctum::actingAs($reviewer, ['survey:review', 'survey:read']);
+
+    $template = FormTemplate::factory()->published()->withChecklist(1, 1)->create();
+    $survey = Survey::factory()->for($template)->submitted()->withAnswers(1, 1)->create();
+
+    $this->postJson(route('api.v2.review.surveys.transition', $survey), [
+        'status' => SurveyStatus::Approved->value,
+    ])->assertOk()
+        ->assertJsonPath('data.status', SurveyStatus::Approved->value)
+        ->assertJsonPath('data.reviewer_name', $reviewer->name)
+        ->assertJsonPath('data.answers.0.question_text', fn ($v) => filled($v));
+});

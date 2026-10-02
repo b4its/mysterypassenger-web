@@ -4,69 +4,34 @@ use App\Models\FormTemplate;
 use App\Models\Survey;
 use App\Models\TransportMode;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Test ini menjalankan DDL (drop/create tabel v1) pada koneksi sekunder dan
- * memanggil `artisan migrate:from-v1`. Kombinasi DDL lintas-koneksi + artisan
- * dapat meninggalkan state koneksi/transaksi RefreshDatabase yang kotor,
- * sehingga test berikutnya menemukan skema yang hilang ("table doesn't exist").
- *
- * Untuk menjamin isolasi, setiap test di file ini:
- *   - memakai koneksi legacy terpisah (v1_legacy_test), dan
- *   - pada akhirnya melakukan `migrate:fresh` ulang + reset flag migrasi,
- *     agar suite berikutnya selalu mulai dari skema bersih.
- */
 beforeEach(function () {
     DB::purge('v1_mysql');
-    config()->set('database.connections.v1_mysql', array_merge(
-        config('database.connections.mysql'),
-        ['database' => 'v1_legacy_test'],
-    ));
+    $sqlitePath = storage_path('framework/testing/v1_legacy.sqlite');
+    @mkdir(dirname($sqlitePath), 0777, true);
+    @unlink($sqlitePath);
+    touch($sqlitePath);
 
-    dropLegacyTables();
+    config()->set('database.connections.v1_mysql', [
+        'driver' => 'sqlite',
+        'database' => $sqlitePath,
+        'prefix' => '',
+        'foreign_key_constraints' => false,
+    ]);
 });
 
 afterEach(function () {
-    try {
-        dropLegacyTables();
-    } catch (Throwable) {
-        // Koneksi sengaja dibuat gagal pada satu test; abaikan.
-    }
-
     DB::purge('v1_mysql');
-
-    // Pulihkan skema aplikasi: DDL lintas-koneksi + artisan di atas dapat
-    // membatalkan transaksi RefreshDatabase. Migrasi ulang agar test setelah
-    // file ini tidak menemukan tabel yang hilang.
-    RefreshDatabaseState::$migrated = false;
-    try {
-        Artisan::call('migrate:fresh', ['--force' => true]);
-    } catch (Throwable) {
-        // Abaikan: RefreshDatabase akan memigrasi pada test berikutnya.
-    }
+    @unlink(storage_path('framework/testing/v1_legacy.sqlite'));
 });
-
-function dropLegacyTables(): void
-{
-    if (config('database.connections.v1_mysql.database') !== 'v1_legacy_test') {
-        return;
-    }
-
-    foreach (['jawaban_pelaporan', 'list_pertanyaan', 'master_pertanyaan', 'pelaporan', 'users'] as $table) {
-        Schema::connection('v1_mysql')->dropIfExists($table);
-    }
-}
 
 /**
  * Siapkan skema mirip v1 pada koneksi v1_mysql.
  */
 function setupLegacyV1Schema(): void
 {
-    dropLegacyTables();
 
     Schema::connection('v1_mysql')->create('users', function ($t) {
         $t->id();

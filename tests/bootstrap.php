@@ -3,33 +3,18 @@
 /**
  * Bootstrap test PHPUnit/Pest.
  *
- * Masalah: bila artefak cache bootstrap ada (config.php, routes-v7.php, dst.),
- * Laravel memakai nilai ter-cache sehingga:
- *   1. `.env.testing` DIABAIKAN → test berjalan pada DB utama dan
- *      `RefreshDatabase` menghapus datanya.
- *   2. Rute Livewire (hash dinamis) tidak cocok → request update 404 dan
- *      state form Filament tidak diterapkan (test seolah "hijau" palsu).
+ * Catatan penting:
+ * - Menghapus `bootstrap/cache/config.php` DARI SINI berbahaya: `php artisan
+ *   test` sudah mem-boot aplikasi (memakai config ter-cache) SEBELUM file ini
+ *   dimuat, sehingga penghapusan di sini membuat state run pertama tidak
+ *   konsisten (migrasi parsial → "table doesn't exist" yang flaky).
+ * - Karena itu, pembersihan config cache dilakukan SEBELUM artisan booting,
+ *   lewat target `make test` (test-prepare). Untuk `php artisan test` langsung,
+ *   `Tests\TestCase` memasang penjaga yang menggagalkan test bila mengarah ke
+ *   database non-uji (mencegah penghapusan data DB utama).
  *
- * Solusi: hapus artefak cache bootstrap sebelum suite berjalan.
+ * Yang dibersihkan di sini hanya cache hasil Pest/PHPUnit (aman & idempoten).
  */
-$cacheFiles = [
-    'config.php',
-    'routes-v7.php',
-    'events.php',
-    'services.php',
-    'packages.php',
-];
-
-foreach ($cacheFiles as $file) {
-    $path = __DIR__.'/../bootstrap/cache/'.$file;
-
-    if (is_file($path)) {
-        @unlink($path);
-    }
-}
-
-// Pest/PHPUnit result cache yang basi dapat memuat test factory lama
-// (mis. daftar trait yang usang) dan menyebabkan kegagalan misterius.
 $phpunitCache = __DIR__.'/../.phpunit.cache';
 
 if (is_dir($phpunitCache)) {

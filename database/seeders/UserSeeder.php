@@ -20,6 +20,13 @@ class UserSeeder extends Seeder
                 'organization' => 'Direktorat Jenderal Perhubungan',
             ],
             [
+                'name' => 'Administrator',
+                'username' => 'admin_address',
+                'email' => 'admin@address.com',
+                'role' => UserRole::Admin,
+                'organization' => 'Direktorat Jenderal Perhubungan',
+            ],
+            [
                 'name' => 'Reviewer Utama',
                 'username' => 'reviewer',
                 'email' => 'reviewer@mysterypassenger.test',
