@@ -46,20 +46,40 @@ install: ## Setup awal: build, up, composer, .env, key, migrate, seed, build ase
 	$(ART) db:seed --force
 	$(NPM) install
 	$(NPM) run build
+	$(ART) filament:assets
 	@$(MAKE) --no-print-directory perms
 	@echo ""
 	@echo "  Selesai. Buka http://localhost:$$(grep -E '^APP_PORT=' .env | cut -d= -f2 || echo 8080)/admin"
 	@echo "  Buat user admin dengan: make user"
 	@echo ""
 
+# ── Aset ──────────────────────────────────────────────────────────────────────
+# Pastikan aset frontend (Vite) & aset Filament tersedia. Tanpa ini, halaman
+# tampil tanpa CSS/style (public/build & public/css/filament tidak ada pada
+# checkout bersih karena keduanya di-gitignore).
+# Prasyarat: container php sudah berjalan.
+.PHONY: assets
+assets: ## Bangun aset Vite + publikasikan aset Filament bila belum ada
+	@if [ ! -f public/build/manifest.json ] || [ ! -f public/css/filament/filament/app.css ]; then \
+		echo ">> Aset belum lengkap, membangun..."; \
+		$(NPM) install --no-audit --no-fund; \
+		$(NPM) run build; \
+		$(ART) filament:assets; \
+		echo ">> Selesai membangun aset."; \
+	else \
+		echo ">> Aset sudah ada (public/build + public/css/filament)."; \
+	fi
+
 .PHONY: up
-up: ## Nyalakan semua service (nginx, php, mysql, queue, scheduler)
+up: ## Nyalakan semua service lalu pastikan aset terbangun
 	$(DC) up -d
+	@$(MAKE) --no-print-directory assets
 	@$(MAKE) --no-print-directory ps
 
 .PHONY: up-build
 up-build: ## Build ulang image lalu nyalakan
 	$(DC) up -d --build
+	@$(MAKE) --no-print-directory assets
 	@$(MAKE) --no-print-directory ps
 
 .PHONY: dev
@@ -98,8 +118,23 @@ ps: ## Status container
 
 # ── Shell & log ───────────────────────────────────────────────────────────────
 
+.PHONY: assets-check
+assets-check: ## Peringatkan bila aset frontend/Filament belum ada
+	@if [ ! -f public/build/manifest.json ]; then \
+		echo ""; \
+		echo "  PERINGATAN: public/build/manifest.json tidak ada → halaman akan tampil"; \
+		echo "  TANPA CSS. Jalankan: make assets   (atau make up)"; \
+		echo ""; \
+	fi
+	@if [ ! -f public/css/filament/filament/app.css ]; then \
+		echo ""; \
+		echo "  PERINGATAN: aset Filament belum dipublikasikan → panel admin TANPA CSS."; \
+		echo "  Jalankan: make assets"; \
+		echo ""; \
+	fi
+
 .PHONY: shell
-shell: ## Masuk shell container php (user www-data)
+shell: assets-check ## Masuk shell container php (user www-data)
 	$(PHP_TTY) bash
 
 .PHONY: shell-root

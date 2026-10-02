@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 
+@import '../../vendor/filament/filament/resources/css/index.css';
 @import '../../vendor/filament/support/resources/css/index.css';
 @import '../../vendor/filament/actions/resources/css/index.css';
 @import '../../vendor/filament/forms/resources/css/index.css';
@@ -11,6 +12,9 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../../app/Filament/**/*.php';
+@source '../../app/Livewire/**/*.php';
 
 @variant dark (&:where(.dark, .dark *));
 

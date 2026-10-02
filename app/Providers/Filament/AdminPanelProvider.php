@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->profile(isSimple: false)
             ->passwordReset()
+            ->viteTheme('resources/css/app.css')
             ->colors([
                 'primary' => Color::Blue,
                 'danger' => Color::Rose,

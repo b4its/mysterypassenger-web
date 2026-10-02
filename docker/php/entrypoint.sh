@@ -33,6 +33,18 @@ if [ -f .env ] && ! grep -q '^APP_KEY=base64:' .env; then
     php artisan key:generate --force --no-interaction || true
 fi
 
+# Publikasikan aset Filament bila belum ada (defensif agar panel tidak tanpa CSS).
+if [ -d vendor/filament ] && [ ! -f public/css/filament/filament/app.css ]; then
+    echo "[entrypoint] mempublikasikan aset Filament"
+    php artisan filament:assets --no-interaction || true
+fi
+
+# Peringatkan bila aset frontend (Vite) belum dibangun.
+if [ -d node_modules ] && [ ! -f public/build/manifest.json ]; then
+    echo "[entrypoint] PERINGATAN: public/build/manifest.json tidak ada."
+    echo "[entrypoint]             Jalankan 'make assets' agar halaman tampil dengan CSS."
+fi
+
 # Tunggu MySQL siap (hanya bila service DB dikonfigurasi)
 if [ -n "${DB_HOST}" ]; then
     echo "[entrypoint] menunggu ${DB_HOST}:${DB_PORT:-3306} ..."
