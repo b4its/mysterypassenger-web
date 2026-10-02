@@ -55,6 +55,12 @@ class SurveyAnswer extends Model
         return $this->hasMany(SurveyAnswerMedia::class)->orderBy('sort_order');
     }
 
+    /** Nilai ter-tipe sesuai answer_type (boolean, array, string, number, dll). */
+    public function typedValue(): mixed
+    {
+        return app(AnswerTypeRegistry::class)->for($this->answer_type)->toFormState($this);
+    }
+
     /** Representasi siap-tampil, dipakai PDF, print, dan infolist. */
     public function displayValue(): string
     {

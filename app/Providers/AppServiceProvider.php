@@ -8,8 +8,11 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\Exports\ExportColumn;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -43,6 +46,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Tanggal Indonesia di seluruh aplikasi.
         Carbon::setLocale('id');
+
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
 
         Event::listen(Login::class, RecordLastLogin::class);
 

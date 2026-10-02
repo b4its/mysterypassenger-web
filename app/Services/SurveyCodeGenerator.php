@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Survey;
 use App\Models\TransportMode;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class SurveyCodeGenerator
 {
@@ -24,24 +23,23 @@ class SurveyCodeGenerator
 
         $prefix = $this->prefix($survey);
 
-        return DB::transaction(function () use ($survey, $date, $prefix) {
-            $count = Survey::withTrashed()
-                ->where('transport_mode_id', $survey->transport_mode_id)
-                ->whereYear('executed_at', $date->year)
-                ->whereMonth('executed_at', $date->month)
-                ->lockForUpdate()
-                ->count();
+        $start = $date->copy()->startOfMonth();
+        $end = $date->copy()->endOfMonth();
 
-            $sequence = $count + 1;
+        $count = Survey::withTrashed()
+            ->where('transport_mode_id', $survey->transport_mode_id)
+            ->whereBetween('executed_at', [$start, $end])
+            ->count();
 
-            return sprintf(
-                '%s/%s/%s/%04d',
-                $prefix,
-                $date->format('Y'),
-                $date->format('m'),
-                $sequence,
-            );
-        });
+        $sequence = $count + 1;
+
+        return sprintf(
+            '%s/%s/%s/%04d',
+            $prefix,
+            $date->format('Y'),
+            $date->format('m'),
+            $sequence,
+        );
     }
 
     private function prefix(Survey $survey): string

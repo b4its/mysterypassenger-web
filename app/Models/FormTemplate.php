@@ -90,6 +90,11 @@ class FormTemplate extends Model
         return $this->status === TemplateStatus::Draft;
     }
 
+    public function isPublished(): bool
+    {
+        return $this->status === TemplateStatus::Published;
+    }
+
     public function scopePublished(Builder $q): Builder
     {
         return $q->where('status', TemplateStatus::Published);
