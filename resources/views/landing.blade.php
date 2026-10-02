@@ -26,9 +26,9 @@
             @if ($isAuthenticated)
                 <div class="flex items-center gap-3 text-sm">
                     <span class="hidden text-slate-500 sm:inline">Masuk sebagai <span class="font-medium text-slate-700">{{ $user->name }}</span></span>
-                    <a href="{{ route('filament.admin.pages.dashboard') }}"
+                    <a href="{{ \Filament\Facades\Filament::getHomeUrl() }}"
                        class="rounded-lg border border-slate-200 bg-white px-4 py-2 font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900">
-                        Dasbor
+                        Buka Aplikasi
                     </a>
                 </div>
             @else

@@ -43,7 +43,7 @@ it('menampilkan identitas pengguna dan tautan dasbor setelah masuk', function ()
 
     $response->assertOk()
         ->assertSee('Petugas Uji')
-        ->assertSee('Dasbor')
+        ->assertSee('Buka Aplikasi')
         ->assertDontSee('Anda belum masuk');
 });
 
