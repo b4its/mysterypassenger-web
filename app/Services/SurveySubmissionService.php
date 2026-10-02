@@ -41,6 +41,14 @@ class SurveySubmissionService
             if ($submit) {
                 $survey->refresh()->load(['answers.question', 'fieldValues', 'formTemplate']);
 
+                // Cegah regresi status: submit hanya sah bila transisi ke
+                // Submitted diizinkan dari status saat ini (draf / dikembalikan).
+                if (! in_array(SurveyStatus::Submitted, $survey->status->allowedTransitions(), true)) {
+                    throw ValidationException::withMessages([
+                        'status' => "Survei berstatus {$survey->status->getLabel()} tidak dapat dikirim ulang.",
+                    ]);
+                }
+
                 $this->validateForSubmit($survey);
 
                 $survey->forceFill([

@@ -1,8 +1,11 @@
 <?php
 
 use App\Enums\SurveyStatus;
+use App\Models\FormTemplate;
 use App\Models\Survey;
 use App\Services\SurveyStateMachine;
+use App\Services\SurveySubmissionService;
+use Illuminate\Validation\ValidationException;
 
 it('mengizinkan draft ke submitted', function () {
     $survey = Survey::factory()->create(['status' => SurveyStatus::Draft]);
@@ -50,3 +53,12 @@ it('memperbolehkan submitted ke approved', function () {
 
     expect($result->status)->toBe(SurveyStatus::Approved);
 });
+
+it('menolak submit ulang survei yang statusnya terkunci', function () {
+    $template = FormTemplate::factory()->withChecklist(1, 2)->create(['scoring_enabled' => true]);
+    $template->questions()->update(['is_required' => false]);
+
+    $survey = Survey::factory()->for($template)->create(['status' => SurveyStatus::Approved]);
+
+    app(SurveySubmissionService::class)->save($survey, [], submit: true);
+})->throws(ValidationException::class);

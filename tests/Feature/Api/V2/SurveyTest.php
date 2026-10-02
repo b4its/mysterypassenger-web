@@ -198,3 +198,16 @@ it('tidak menghapus bukti media saat submit tanpa mengirim state jawaban', funct
     expect(SurveyAnswerMedia::count())->toBe(1)
         ->and($survey->fresh()->status)->toBe(SurveyStatus::Submitted);
 });
+
+it('menolak submit ulang survei yang sudah terkunci', function () {
+    $admin = User::factory()->admin()->create();
+    Sanctum::actingAs($admin, ['survey:write', 'survey:read']);
+
+    $survey = Survey::factory()->create(['status' => SurveyStatus::Approved]);
+
+    $this->postJson(route('api.v2.surveys.submit', $survey))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['status']);
+
+    expect($survey->fresh()->status)->toBe(SurveyStatus::Approved);
+});

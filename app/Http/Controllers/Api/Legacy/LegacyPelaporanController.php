@@ -74,7 +74,7 @@ class LegacyPelaporanController extends Controller
             'evaluator_name' => (string) ($request->input('evaluator') ?? $user->name),
             'executed_at' => $executedAt,
             'location_text' => (string) ($request->input('lokasi') ?? $request->input('pelabuhanAsal')),
-            'status' => SurveyStatus::Approved,
+            'status' => SurveyStatus::Draft,
         ]);
 
         $fields = [
