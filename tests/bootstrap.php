@@ -28,4 +28,14 @@ foreach ($cacheFiles as $file) {
     }
 }
 
+// Pest/PHPUnit result cache yang basi dapat memuat test factory lama
+// (mis. daftar trait yang usang) dan menyebabkan kegagalan misterius.
+$phpunitCache = __DIR__.'/../.phpunit.cache';
+
+if (is_dir($phpunitCache)) {
+    foreach (glob($phpunitCache.'/*') ?: [] as $file) {
+        is_dir($file) ? @rmdir($file) : @unlink($file);
+    }
+}
+
 require __DIR__.'/../vendor/autoload.php';

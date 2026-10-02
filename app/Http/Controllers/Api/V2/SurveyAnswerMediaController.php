@@ -51,7 +51,7 @@ class SurveyAnswerMediaController extends Controller
             'disk' => 'survey_media',
             'path' => $path,
             'mime_type' => $file->getMimeType(),
-            'file_size' => $file->getSize(),
+            'size' => $file->getSize(),
             'sort_order' => $currentCount,
         ]);
 

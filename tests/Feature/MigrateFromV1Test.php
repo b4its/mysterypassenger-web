@@ -4,28 +4,14 @@ use App\Models\FormTemplate;
 use App\Models\Survey;
 use App\Models\TransportMode;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Test ini menjalankan DDL (drop/create tabel v1) pada koneksi sekunder dan
- * memanggil `artisan migrate:from-v1`. Pada MySQL, DDL memicu IMPLICIT COMMIT
- * sehingga membatalkan transaksi RefreshDatabase — meninggalkan state migrasi
- * yang rusak untuk test berikutnya (tabel hilang → QueryException).
- *
- * Karena itu kami memakai DatabaseMigrations (migrate:fresh per test, TANPA
- * transaksi) alih-alih RefreshDatabase, agar test ini terisolasi penuh dan
- * tidak merusak test lain.
- */
-uses(DatabaseMigrations::class);
-
-/**
  * Arahkan koneksi v1_mysql ke database legacy terpisah sebelum tiap test,
- * agar DDL (create/drop tabel v1) tidak mengganggu skema aplikasi.
+ * agar DDL (create/drop tabel v1) tidak mengganggu transaksi RefreshDatabase.
  */
 beforeEach(function () {
-    DB::purge('v1_mysql');
     config()->set('database.connections.v1_mysql', array_merge(
         config('database.connections.mysql'),
         ['database' => 'v1_legacy_test'],
@@ -39,17 +25,11 @@ afterEach(function () {
         dropLegacyTables();
     } catch (Throwable) {
         // Koneksi sengaja dibuat gagal pada satu test; abaikan.
-    } finally {
-        DB::purge('v1_mysql');
     }
 });
 
 function dropLegacyTables(): void
 {
-    if (config('database.connections.v1_mysql.database') !== 'v1_legacy_test') {
-        return;
-    }
-
     foreach (['jawaban_pelaporan', 'list_pertanyaan', 'master_pertanyaan', 'pelaporan', 'users'] as $table) {
         Schema::connection('v1_mysql')->dropIfExists($table);
     }
@@ -143,14 +123,6 @@ function setupLegacyV1Schema(): void
         ['idMasterPertanyaan' => 3, 'idUsers' => 1, 'created_at' => now(), 'updated_at' => now()],
     ]);
 }
-
-afterEach(function () {
-    if (Schema::connection('v1_mysql')->hasTable('users')) {
-        foreach (['jawaban_pelaporan', 'list_pertanyaan', 'master_pertanyaan', 'pelaporan', 'users'] as $table) {
-            Schema::connection('v1_mysql')->dropIfExists($table);
-        }
-    }
-});
 
 it('melaporkan jumlah baris pada dry-run tanpa menulis apa pun', function () {
     setupLegacyV1Schema();

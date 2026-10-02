@@ -255,9 +255,10 @@ schedule: ## Jalankan scheduler sekali (debug)
 # test akan berjalan pada DB utama (menghapus datanya). Selalu bersihkan
 # config cache sebelum menjalankan test.
 .PHONY: test-prepare
-test-prepare: ## Bersihkan config cache agar test memakai .env.testing
+test-prepare: ## Bersihkan cache config & hasil uji agar suite memakai .env.testing
 	$(ART) config:clear >/dev/null 2>&1 || true
-	$(PHP) rm -f bootstrap/cache/config.php
+	$(PHP) rm -f bootstrap/cache/config.php bootstrap/cache/routes-v7.php
+	$(PHP) rm -rf .phpunit.cache
 
 .PHONY: test
 test: test-prepare ## Jalankan seluruh test suite

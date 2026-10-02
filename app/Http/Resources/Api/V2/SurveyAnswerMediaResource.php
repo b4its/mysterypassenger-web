@@ -24,7 +24,7 @@ class SurveyAnswerMediaResource extends JsonResource
             'path' => $this->path,
             'url' => $survey ? route('surveys.media', ['survey' => $survey, 'media' => $this->id]) : null,
             'mime_type' => $this->mime_type,
-            'file_size' => $this->file_size ? (int) $this->file_size : null,
+            'file_size' => $this->size !== null ? (int) $this->size : null,
             'sort_order' => (int) $this->sort_order,
             'created_at' => $this->created_at?->toISOString(),
         ];
