@@ -52,11 +52,19 @@ class SurveyController extends Controller
         }
 
         if ($request->filled('from')) {
-            $query->where('executed_at', '>=', Carbon::parse($request->input('from'))->startOfDay());
+            $from = $this->parseDate($request->input('from'));
+
+            if ($from !== null) {
+                $query->where('executed_at', '>=', $from->copy()->startOfDay());
+            }
         }
 
         if ($request->filled('until')) {
-            $query->where('executed_at', '<=', Carbon::parse($request->input('until'))->endOfDay());
+            $until = $this->parseDate($request->input('until'));
+
+            if ($until !== null) {
+                $query->where('executed_at', '<=', $until->copy()->endOfDay());
+            }
         }
 
         $perPage = min(max($request->integer('per_page', 15), 1), 100);
@@ -135,5 +143,15 @@ class SurveyController extends Controller
         $survey = $survey->fresh(self::SURVEY_RELATIONS);
 
         return SurveyResource::make($survey);
+    }
+
+    /** Parse tanggal filter dengan aman; abaikan nilai tak valid. */
+    private function parseDate(mixed $value): ?Carbon
+    {
+        try {
+            return Carbon::parse($value);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

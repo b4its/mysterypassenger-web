@@ -74,3 +74,14 @@ it('mengembalikan struktur template lengkap termasuk section, field, indikator, 
         ->assertJsonFragment(['text' => 'AC berfungsi baik?'])
         ->assertJsonFragment(['label' => 'Ya', 'value' => 'ya']);
 });
+
+it('mengabaikan updated_since yang tidak valid tanpa error 500', function () {
+    $user = User::factory()->surveyor()->create();
+    Sanctum::actingAs($user, ['template:read']);
+
+    FormTemplate::factory()->published()->create(['name' => 'Template Valid']);
+
+    $this->getJson(route('api.v2.templates.index', ['updated_since' => 'bukan-tanggal']))
+        ->assertOk()
+        ->assertJsonFragment(['name' => 'Template Valid']);
+});

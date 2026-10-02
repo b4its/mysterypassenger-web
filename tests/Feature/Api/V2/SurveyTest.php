@@ -230,3 +230,13 @@ it('tidak membocorkan survei user lain lewat idempotency_key yang sama', functio
         'executed_at' => now()->format('Y-m-d H:i:s'),
     ])->assertNotFound();
 });
+
+it('mengabaikan filter tanggal yang tidak valid tanpa error 500', function () {
+    $surveyor = User::factory()->surveyor()->create();
+    Sanctum::actingAs($surveyor, ['survey:read']);
+
+    Survey::factory()->create(['user_id' => $surveyor->id]);
+
+    $this->getJson(route('api.v2.surveys.index', ['from' => 'ngawur', 'until' => 'ngawur']))
+        ->assertOk();
+});

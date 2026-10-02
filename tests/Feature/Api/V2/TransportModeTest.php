@@ -30,3 +30,14 @@ it('dapat memfilter moda berdasarkan updated_since', function () {
         ->assertJsonFragment(['name' => $recent->name])
         ->assertJsonMissing(['name' => $old->name]);
 });
+
+it('mengabaikan updated_since yang tidak valid tanpa error 500', function () {
+    $user = User::factory()->surveyor()->create();
+    Sanctum::actingAs($user, ['template:read']);
+
+    $mode = TransportMode::factory()->create(['is_active' => true]);
+
+    $this->getJson(route('api.v2.transport-modes.index', ['updated_since' => 'bukan-tanggal']))
+        ->assertOk()
+        ->assertJsonFragment(['name' => $mode->name]);
+});
