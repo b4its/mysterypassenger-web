@@ -1,13 +1,14 @@
 <?php
 
 use App\Http\Controllers\ExportDownloadController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\SurveyMediaController;
 use App\Http\Controllers\SurveyPdfController;
 use App\Http\Controllers\SurveyPrintController;
 use App\Http\Controllers\TemplatePreviewController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/admin');
+Route::get('/', LandingController::class)->name('landing');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('surveys/{survey}/pdf', SurveyPdfController::class)->name('surveys.pdf');

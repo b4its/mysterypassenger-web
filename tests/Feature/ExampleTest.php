@@ -1,7 +1,7 @@
 <?php
 
-test('halaman root mengarahkan ke panel admin', function () {
+test('halaman root menampilkan halaman selamat datang', function () {
     $response = $this->get('/');
 
-    $response->assertRedirect('/admin');
+    $response->assertOk();
 });
