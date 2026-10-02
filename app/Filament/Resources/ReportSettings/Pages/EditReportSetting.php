@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\ReportSettings\Pages;
 
+use App\Enums\OutputSection;
 use App\Filament\Resources\ReportSettings\ReportSettingResource;
 use App\Models\Survey;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\Width;
+use Illuminate\Contracts\View\View;
 
 class EditReportSetting extends EditRecord
 {
@@ -24,34 +26,36 @@ class EditReportSetting extends EditRecord
         return [
             Action::make('preview')
                 ->label('Pratinjau PDF')
-                ->icon('heroicon-o-eye')
+                ->icon('heroicon-o-document-magnifying-glass')
                 ->color('gray')
-                ->action(function () {
-                    // Cari survei terbaru pada moda ini sebagai bahan pratinjau.
-                    $survey = Survey::query()
-                        ->when(
-                            $this->record->transport_mode_id,
-                            fn ($q) => $q->where('transport_mode_id', $this->record->transport_mode_id),
-                        )
-                        ->latest('executed_at')
-                        ->first();
-
-                    if (! $survey) {
-                        Notification::make()
-                            ->title('Belum ada survei untuk pratinjau')
-                            ->body('Pratinjau memakai data survei nyata. Buat satu survei pada moda terkait terlebih dahulu.')
-                            ->info()
-                            ->send();
-
-                        return null;
-                    }
-
-                    return redirect()->to(route('surveys.print', [
-                        'survey' => $survey,
-                        'section' => 'checklist',
-                        'auto' => 0,
-                    ]));
-                }),
+                ->modalHeading('Pratinjau PDF')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Tutup')
+                ->modalWidth(Width::SevenExtraLarge)
+                ->modalContent(fn () => $this->previewContent()),
         ];
+    }
+
+    /**
+     * Pratinjau memakai survei terbaru pada moda ini sebagai data nyata.
+     */
+    private function previewContent(): View
+    {
+        $survey = Survey::query()
+            ->when(
+                $this->record->transport_mode_id,
+                fn ($q) => $q->where('transport_mode_id', $this->record->transport_mode_id),
+            )
+            ->latest('executed_at')
+            ->first();
+
+        if (! $survey) {
+            return view('filament.partials.pdf-preview-empty');
+        }
+
+        return view('filament.partials.pdf-preview', [
+            'url' => route('surveys.pdf', ['survey' => $survey, 'section' => OutputSection::Checklist->value]),
+            'filename' => str($survey->code)->replace('/', '-')->append('-checklist.pdf')->toString(),
+        ]);
     }
 }

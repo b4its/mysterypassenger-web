@@ -132,5 +132,8 @@
             &copy; {{ date('Y') }} {{ config('app.name', 'Mystery Passenger') }} — Portal Evaluasi Multi Moda Transportasi
         </div>
     </footer>
+
+    {{-- PDF Preview Modal --}}
+    @include('partials.pdf-preview-modal')
 </body>
 </html>

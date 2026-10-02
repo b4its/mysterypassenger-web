@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Surveys\Tables;
 
+use App\Enums\OutputSection;
 use App\Enums\SurveyStatus;
+use App\Filament\Actions\PreviewSurveyPdfAction;
 use App\Filament\Exports\SurveyExporter;
 use App\Filament\Resources\Surveys\SurveyResource;
 use App\Jobs\GenerateSurveyPdfBundle;
@@ -101,15 +103,18 @@ class SurveysTable
                         ->icon('heroicon-o-printer')
                         ->url(fn (Survey $r) => route('surveys.print', ['survey' => $r, 'section' => 'report']), shouldOpenInNewTab: true),
 
-                    Action::make('pdfChecklist')
-                        ->label('PDF Ceklist')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->url(fn (Survey $r) => route('surveys.pdf', ['survey' => $r, 'section' => 'checklist'])),
+                    PreviewSurveyPdfAction::make(OutputSection::Checklist),
+                    PreviewSurveyPdfAction::make(OutputSection::Report),
 
-                    Action::make('pdfReport')
-                        ->label('PDF Laporan')
+                    Action::make('downloadChecklistPdf')
+                        ->label('Unduh PDF Ceklist')
                         ->icon('heroicon-o-document-arrow-down')
-                        ->url(fn (Survey $r) => route('surveys.pdf', ['survey' => $r, 'section' => 'report'])),
+                        ->url(fn (Survey $r) => route('surveys.pdf', ['survey' => $r, 'section' => 'checklist', 'download' => 1])),
+
+                    Action::make('downloadReportPdf')
+                        ->label('Unduh PDF Laporan')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->url(fn (Survey $r) => route('surveys.pdf', ['survey' => $r, 'section' => 'report', 'download' => 1])),
                 ])
                     ->label('Cetak & Export')
                     ->icon('heroicon-o-printer')

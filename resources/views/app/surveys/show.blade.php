@@ -41,11 +41,20 @@
                     Lanjutkan Isi
                 </a>
             @endif
+            <button type="button"
+                    onclick="openPdfPreviewModal('{{ route('surveys.pdf', $survey) }}', '{{ $survey->code }}')"
+                    class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition inline-flex items-center gap-1.5 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Pratinjau PDF
+            </button>
             <a href="{{ route('surveys.print', $survey) }}" target="_blank"
                class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition">
                 Cetak
             </a>
-            <a href="{{ route('surveys.pdf', $survey) }}" target="_blank"
+            <a href="{{ route('surveys.pdf', ['survey' => $survey, 'download' => 1]) }}"
                class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition">
                 Unduh PDF
             </a>
@@ -136,8 +145,8 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                     @foreach($survey->fieldValues as $fv)
                         <div class="rounded-lg bg-slate-50 p-2.5 border border-slate-100">
-                            <span class="text-slate-400 block text-[11px]">{{ $fv->field_key }}</span>
-                            <span class="text-slate-800 font-semibold">{{ $fv->value }}</span>
+                            <span class="text-slate-400 block text-[11px]">{{ $fv->field_label ?? $fv->field_key }}</span>
+                            <span class="text-slate-800 font-semibold">{{ $fv->value_text ?? (is_array($fv->value) ? implode(', ', $fv->value) : ($fv->value ?? '-')) }}</span>
                         </div>
                     @endforeach
                 </div>

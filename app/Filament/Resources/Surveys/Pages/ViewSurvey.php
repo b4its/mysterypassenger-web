@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Surveys\Pages;
 
+use App\Enums\OutputSection;
+use App\Filament\Actions\PreviewSurveyPdfAction;
 use App\Filament\Resources\Surveys\SurveyResource;
 use App\Models\Survey;
 use Filament\Actions\Action;
@@ -20,17 +22,8 @@ class ViewSurvey extends ViewRecord
                 ->visible(fn (Survey $record) => auth()->user()?->can('update', $record) ?? false)
                 ->url(fn (Survey $record) => SurveyResource::getUrl('fill', ['record' => $record])),
 
-            Action::make('pdfChecklist')
-                ->label('PDF Ceklist')
-                ->icon('heroicon-o-document-arrow-down')
-                ->url(fn (Survey $record) => route('surveys.pdf', ['survey' => $record, 'section' => 'checklist']))
-                ->openUrlInNewTab(),
-
-            Action::make('pdfReport')
-                ->label('PDF Laporan')
-                ->icon('heroicon-o-document-arrow-down')
-                ->url(fn (Survey $record) => route('surveys.pdf', ['survey' => $record, 'section' => 'report']))
-                ->openUrlInNewTab(),
+            PreviewSurveyPdfAction::make(OutputSection::Checklist),
+            PreviewSurveyPdfAction::make(OutputSection::Report),
 
             Action::make('print')
                 ->label('Cetak')
