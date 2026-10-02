@@ -2,11 +2,8 @@
 
 namespace Tests;
 
-use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Arr;
-use Livewire\Features\SupportTesting\Testable;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -17,47 +14,28 @@ abstract class TestCase extends BaseTestCase
         // Panel Filament harus aktif agar test resource tidak menemui panel null.
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
-        $this->overrideFillFormMacro();
+        $this->guardAgainstUsingMainDatabase();
     }
 
     /**
-     * Filament 5.9 + Livewire 4.4: macro `fillForm()` bawaan memakai
-     * `data_set($this, ...)` pada komponen Livewire untuk mengisi state form.
-     * Livewire 4 mengembalikan salinan properti lewat __get, sehingga mutasi
-     * properti bertingkat tidak persist dan fillForm() menjadi no-op.
+     * Pengaman: test HARUS memakai database uji terpisah.
      *
-     * Kita ganti dengan `->set()` (API resmi Livewire) per path bertitik.
-     *
-     * @see vendor/filament/forms/src/Testing/TestsForms.php::fillForm()
+     * Bila artefak cache bootstrap (config.php) masih ada, `.env.testing`
+     * diabaikan dan test berjalan pada DB utama — `RefreshDatabase` akan
+     * mengosongkan datanya. `tests/bootstrap.php` sudah menghapus cache ini,
+     * tetapi penjaga ini mencegah kerusakan data bila cache dibuat ulang
+     * di tengah suite.
      */
-    protected function overrideFillFormMacro(): void
+    protected function guardAgainstUsingMainDatabase(): void
     {
-        Testable::macro('fillForm', function (array|\Closure $state = [], ?string $form = null): static {
-            /** @var Testable $this */
-            if ($this->instance() instanceof HasActions) {
-                $form ??= $this->instance()->getMountedActionSchemaName();
-            }
+        $db = (string) config('database.connections.mysql.database');
 
-            $form ??= $this->instance()->getDefaultTestingSchemaName();
-
-            $schemaInstance = $this->instance()->{$form};
-            $schemaStatePath = $schemaInstance->getStatePath();
-
-            if ($state instanceof \Closure) {
-                $state = $state($schemaInstance->getRawState());
-            }
-
-            if (is_array($state) && $state !== []) {
-                foreach (Arr::dot($state) as $key => $value) {
-                    $fullPath = filled($schemaStatePath) ? "{$schemaStatePath}.{$key}" : $key;
-
-                    $this->set($fullPath, $value);
-                }
-            }
-
-            $this->refresh();
-
-            return $this;
-        });
+        if (app()->environment('testing') && ! str_ends_with($db, '_test')) {
+            $this->fail(
+                "Test berjalan pada database '{$db}', bukan database uji (*_test). ".
+                'Ini akan menghapus data! Jalankan `php artisan config:clear` '.
+                '(atau `make test`, yang sudah membersihkannya) lalu ulangi.'
+            );
+        }
     }
 }

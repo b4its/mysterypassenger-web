@@ -251,25 +251,33 @@ schedule: ## Jalankan scheduler sekali (debug)
 
 # ── Kualitas kode ─────────────────────────────────────────────────────────────
 
+# PENTING: bila bootstrap/cache/config.php ada, .env.testing DIABAIKAN dan
+# test akan berjalan pada DB utama (menghapus datanya). Selalu bersihkan
+# config cache sebelum menjalankan test.
+.PHONY: test-prepare
+test-prepare: ## Bersihkan config cache agar test memakai .env.testing
+	$(ART) config:clear >/dev/null 2>&1 || true
+	$(PHP) rm -f bootstrap/cache/config.php
+
 .PHONY: test
-test: ## Jalankan seluruh test suite
+test: test-prepare ## Jalankan seluruh test suite
 	$(PHP) php artisan test
 
 .PHONY: test-unit
-test-unit: ## Jalankan hanya test unit
+test-unit: test-prepare ## Jalankan hanya test unit
 	$(PHP) php artisan test --testsuite=Unit
 
 .PHONY: test-feature
-test-feature: ## Jalankan hanya test feature
+test-feature: test-prepare ## Jalankan hanya test feature
 	$(PHP) php artisan test --testsuite=Feature
 
 .PHONY: test-filter
-test-filter: ## Jalankan test tertentu: make test-filter NAME=ScoreCalculator
+test-filter: test-prepare ## Jalankan test tertentu: make test-filter NAME=ScoreCalculator
 	@test -n "$(NAME)" || { echo 'Gunakan: make test-filter NAME=NamaTest'; exit 1; }
 	$(PHP) php artisan test --filter=$(NAME)
 
 .PHONY: coverage
-coverage: ## Jalankan test dengan laporan coverage
+coverage: test-prepare ## Jalankan test dengan laporan coverage
 	$(PHP) php artisan test --coverage --min=70
 
 .PHONY: pint
