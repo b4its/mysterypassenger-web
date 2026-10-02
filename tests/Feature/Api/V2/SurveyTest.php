@@ -211,3 +211,22 @@ it('menolak submit ulang survei yang sudah terkunci', function () {
 
     expect($survey->fresh()->status)->toBe(SurveyStatus::Approved);
 });
+
+it('tidak membocorkan survei user lain lewat idempotency_key yang sama', function () {
+    $surveyor1 = User::factory()->surveyor()->create();
+    $surveyor2 = User::factory()->surveyor()->create();
+
+    $foreign = Survey::factory()->create([
+        'user_id' => $surveyor2->id,
+        'idempotency_key' => 'SHAREDKEY1234567890ABCDEFGHIJ12',
+    ]);
+
+    Sanctum::actingAs($surveyor1, ['survey:write', 'survey:read']);
+
+    $this->postJson(route('api.v2.surveys.store'), [
+        'idempotency_key' => 'SHAREDKEY1234567890ABCDEFGHIJ12',
+        'form_template_id' => $foreign->form_template_id,
+        'evaluator_name' => 'Penyusup',
+        'executed_at' => now()->format('Y-m-d H:i:s'),
+    ])->assertNotFound();
+});

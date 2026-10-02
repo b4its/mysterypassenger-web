@@ -75,8 +75,14 @@ class SurveyController extends Controller
 
     public function store(StoreSurveyRequest $request, SurveySubmissionService $service): JsonResponse
     {
-        // Idempotensi: kembalikan yang sudah ada bila idempotency_key cocok
-        if ($existing = Survey::where('idempotency_key', $request->string('idempotency_key'))->first()) {
+        // Idempotensi: kembalikan yang sudah ada bila idempotency_key cocok.
+        // WAJIB dibatasi ke user pembuat agar kunci milik surveyor lain tidak
+        // membocorkan survei mereka (IDOR).
+        $existing = Survey::where('idempotency_key', $request->string('idempotency_key'))
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if ($existing) {
             $existing->load(self::SURVEY_RELATIONS);
 
             return SurveyResource::make($existing)->response()->setStatusCode(200);
